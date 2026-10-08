@@ -70,15 +70,17 @@
   async function opDrop(e: DragEvent) {
     e.preventDefault();
     if (!e.dataTransfer) return;
-    const positie = controller?.naarCanvas(e.clientX, e.clientY);
+    const opCanvas = (e.target as HTMLElement | null)?.closest?.('#canvas-vlak');
+    const positie = opCanvas ? controller?.naarCanvas(e.clientX, e.clientY) : undefined;
     try { await voegFotosToe(await afbeeldingenUit(e.dataTransfer), positie); } catch (err) { meldFout(err); }
   }
 
   async function opPlak(e: ClipboardEvent) {
-    if ((e.target as HTMLElement).closest('input, textarea')) return;
-    if (!e.clipboardData || ![...e.clipboardData.items].some((i) => i.type.startsWith('image/'))) return;
+    if ((e.target as HTMLElement | null)?.closest?.('input, textarea, [contenteditable]')) return;
+    const cd = e.clipboardData;
+    if (!cd || !(cd.files.length || cd.types.includes('text/uri-list'))) return;
     e.preventDefault();
-    try { await voegFotosToe(await afbeeldingenUit(e.clipboardData)); } catch (err) { meldFout(err); }
+    try { await voegFotosToe(await afbeeldingenUit(cd)); } catch (err) { meldFout(err); }
   }
 
   function opToets(e: KeyboardEvent) {
@@ -98,7 +100,7 @@
   }
 </script>
 
-<svelte:window onkeydown={opToets} onpaste={opPlak} />
+<svelte:window onkeydown={opToets} onpaste={opPlak} ondragover={(e) => e.preventDefault()} ondrop={opDrop} />
 
 <div class="editor">
   <div class="vak-boven">
@@ -113,7 +115,7 @@
   </div>
   <!-- opdrachtbalk -->
   <div class="vak-tools"><GereedschapBalk actief={paneel} onKies={(p) => (paneel = paneel === p ? null : p)} /></div>
-  <div class="vak-canvas" id="canvas-vlak" role="application" aria-label="Collage" ondragover={(e) => e.preventDefault()} ondrop={opDrop}>
+  <div class="vak-canvas" id="canvas-vlak" role="application" aria-label="Collage">
     <div class="canvas" bind:this={canvasEl}></div>
     {#if geselecteerd}<ContextBalk {editor} el={geselecteerd} />{/if}
   </div>

@@ -38,13 +38,18 @@ export async function verkleinAfbeelding(blob: Blob, max = 2048): Promise<Blob> 
   const { breedte, hoogte } = pasIn(d.w, d.h, max);
   const klein = breedte === d.w && hoogte === d.h;
   if (klein && blob.size < 4_000_000 && blob.type !== 'image/svg+xml') { d.sluit(); return blob; }
-  const c = document.createElement('canvas');
-  c.width = breedte;
-  c.height = hoogte;
-  c.getContext('2d')!.drawImage(d.bron, 0, 0, breedte, hoogte);
-  d.sluit();
-  const type = blob.type === 'image/png' || blob.type === 'image/webp' || blob.type === 'image/gif' || blob.type === 'image/svg+xml' ? 'image/png' : 'image/jpeg';
-  return new Promise((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new ImportFout('kapot'))), type, 0.9));
+  try {
+    const c = document.createElement('canvas');
+    c.width = breedte;
+    c.height = hoogte;
+    const ctx = c.getContext('2d');
+    if (!ctx) throw new ImportFout('kapot');
+    ctx.drawImage(d.bron, 0, 0, breedte, hoogte);
+    const type = blob.type === 'image/png' || blob.type === 'image/webp' || blob.type === 'image/gif' || blob.type === 'image/svg+xml' ? 'image/png' : 'image/jpeg';
+    return await new Promise<Blob>((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new ImportFout('kapot'))), type, 0.9));
+  } finally {
+    d.sluit();
+  }
 }
 
 function urlUit(dt: DataTransfer): string | null {
