@@ -124,3 +124,17 @@ test('filter en helderheid kiezen', async ({ page }) => {
   expect(f.filter).toBe('sepia');
   expect(f.helderheid).toBe(40);
 });
+
+test('bijsnijden naar vierkant past de uitsnede en hoogte aan', async ({ page }) => {
+  await openNieuweCollage(page);
+  await page.click('#tool-foto');
+  const chooser = page.waitForEvent('filechooser');
+  await page.click('#foto-kiezen');
+  await (await chooser).setFiles({ name: 'foto.png', mimeType: 'image/png', buffer: await maakPng(page) });
+  await page.click('#foto-bijsnijden');
+  await page.click('#verhouding-1-1');
+  await page.click('#bijsnij-klaar');
+  const [f] = await elementen(page);
+  expect(f.uitsnede.breedte).toBeCloseTo(f.uitsnede.hoogte, 3);
+  expect(f.hoogte).toBe(f.breedte);
+});

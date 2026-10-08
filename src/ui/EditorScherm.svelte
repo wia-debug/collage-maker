@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount, untrack } from 'svelte';
-  import type { Collage, Element } from '../document/types';
+  import type { Collage, Element, FotoElement, Uitsnede } from '../document/types';
+  import BijsnijDialoog from './BijsnijDialoog.svelte';
   import { maakVorm } from '../document/create';
   import { createEditor } from '../editor/store';
   import { CanvasController } from '../editor/canvas';
@@ -46,6 +47,21 @@
   });
   onDestroy(() => controller?.destroy());
 
+  let bijsnijden = $state<{ id: string; bron: HTMLImageElement; start: Uitsnede | null } | null>(null);
+
+  function openBijsnijden(id: string) {
+    const f = editor.get().collage.elementen.find((e) => e.id === id) as FotoElement | undefined;
+    const bron = f?.assetId ? assets.image(f.assetId) : undefined;
+    if (f && bron) bijsnijden = { id, bron, start: f.uitsnede };
+  }
+
+  function klaarBijsnijden(u: Uitsnede) {
+    if (!bijsnijden) return;
+    const f = editor.get().collage.elementen.find((e) => e.id === bijsnijden!.id) as FotoElement;
+    editor.update(f.id, { uitsnede: u, hoogte: Math.round((f.breedte * u.hoogte) / u.breedte) });
+    bijsnijden = null;
+  }
+
   let fotoInput: HTMLInputElement;
   let fotoVak: string | undefined;
 
@@ -84,6 +100,7 @@
   }
 
   function opToets(e: KeyboardEvent) {
+    if (bijsnijden) return;
     if ((e.target as HTMLElement).closest('input, textarea, [contenteditable]')) return;
     const actie = toetsNaarActie(e);
     if (!actie) return;
@@ -117,13 +134,13 @@
   <div class="vak-tools"><GereedschapBalk actief={paneel} onKies={(p) => (paneel = paneel === p ? null : p)} /></div>
   <div class="vak-canvas" id="canvas-vlak" role="application" aria-label="Collage">
     <div class="canvas" bind:this={canvasEl}></div>
-    {#if geselecteerd}<ContextBalk {editor} el={geselecteerd} />{/if}
+    {#if geselecteerd}<ContextBalk {editor} el={geselecteerd} onBijsnijden={() => openBijsnijden(geselecteerd!.id)} />{/if}
   </div>
   {#if paneel}
     <aside class="vak-paneel" id="paneel-{paneel}">
       {#if paneel === 'vormen'}<VormPaneel {editor} el={geselecteerd} />{/if}
       {#if paneel === 'stickers'}<StickerPaneel {editor} {assets} el={geselecteerd} {startPakket} />{/if}
-      {#if paneel === 'foto'}<FotoPaneel {editor} {assets} el={geselecteerd} onKiesFoto={kiesFoto} />{/if}
+      {#if paneel === 'foto'}<FotoPaneel {editor} {assets} el={geselecteerd} onKiesFoto={kiesFoto} onBijsnijden={openBijsnijden} />{/if}
       <!-- panelen -->
     </aside>
   {/if}
@@ -140,6 +157,10 @@
       { label: 'Stoppen', gevaar: true, actie: onTerug },
     ]}
   />
+{/if}
+
+{#if bijsnijden}
+  <BijsnijDialoog bron={bijsnijden.bron} start={bijsnijden.start} onKlaar={klaarBijsnijden} onAnnuleer={() => (bijsnijden = null)} />
 {/if}
 
 <style>
