@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { AssetStore, stickerKey } from './store';
 import { maakSticker, nieuweCollage } from '../document/create';
 
@@ -31,5 +31,28 @@ describe('AssetStore', () => {
     const c = { ...nieuweCollage('vierkant'), elementen: [maakSticker({ x: 0, y: 0, sticker: 'ruimte/rocket', kleur: '#5AA9F2', grootte: 100 })] };
     await s.preload(c);
     expect(s.image(stickerKey('ruimte/rocket', '#5AA9F2'))).toBeDefined();
+  });
+
+  it('ensureSticker onthoudt een mislukte fetch niet', async () => {
+    const s = new AssetStore();
+    const spy = vi.spyOn(globalThis, 'fetch');
+    await expect(s.ensureSticker('dieren/bestaat-niet', '#000000')).rejects.toThrow();
+    await expect(s.ensureSticker('dieren/bestaat-niet', '#000000')).rejects.toThrow();
+    expect(spy).toHaveBeenCalledTimes(2);
+    spy.mockRestore();
+  });
+
+  it('preload slaagt ook als een sticker ontbreekt', async () => {
+    const s = new AssetStore();
+    const c = {
+      ...nieuweCollage('vierkant'),
+      elementen: [
+        maakSticker({ x: 0, y: 0, sticker: 'dieren/bestaat-niet', kleur: '#000000', grootte: 100 }),
+        maakSticker({ x: 0, y: 0, sticker: 'dieren/cat', kleur: '#5AA9F2', grootte: 100 }),
+      ],
+    };
+    await expect(s.preload(c)).resolves.toBeUndefined();
+    expect(s.image(stickerKey('dieren/cat', '#5AA9F2'))).toBeDefined();
+    expect(s.image(stickerKey('dieren/bestaat-niet', '#000000'))).toBeUndefined();
   });
 });

@@ -37,16 +37,26 @@ export class AssetStore implements RenderCtx {
       svg = fetch(stickerUrl(sticker)).then((r) => {
         if (!r.ok) throw new Error(`Sticker ${sticker} niet gevonden`);
         return r.text();
+      }).then((t) => {
+        if (!t.includes('<svg')) throw new Error(`Sticker ${sticker} is geen svg`);
+        return t;
+      }).catch((e) => {
+        this.svgCache.delete(sticker);
+        throw e;
       });
       this.svgCache.set(sticker, svg);
     }
     const url = URL.createObjectURL(new Blob([recolorSvg(await svg, kleur)], { type: 'image/svg+xml' }));
-    this.images.set(key, await loadImage(url));
+    try {
+      this.images.set(key, await loadImage(url));
+    } finally {
+      URL.revokeObjectURL(url);
+    }
     return key;
   }
 
   async preload(c: Collage): Promise<void> {
     const stickers = c.elementen.filter((e): e is StickerElement => e.type === 'sticker');
-    await Promise.all(stickers.map((s) => this.ensureSticker(s.sticker, s.kleur)));
+    await Promise.allSettled(stickers.map((s) => this.ensureSticker(s.sticker, s.kleur)));
   }
 }
