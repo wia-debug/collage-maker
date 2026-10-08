@@ -13,6 +13,10 @@
   import Dialoog from './Dialoog.svelte';
   import VormPaneel from './VormPaneel.svelte';
   import StickerPaneel from './StickerPaneel.svelte';
+  import FotoPaneel from './FotoPaneel.svelte';
+  import { voegFotoToe } from '../editor/foto-acties';
+  import { afbeeldingenUit, FOUTTEKST, ImportFout } from '../import/afbeelding';
+  import { toon } from './toast';
 
   let { collage, opdracht = null, startPakket = null, onTerug }: { collage: Collage; opdracht?: string | null; startPakket?: string | null; onTerug: () => void } = $props();
 
@@ -37,10 +41,45 @@
 
   onMount(async () => {
     await assets.preload(editor.get().collage);
-    controller = new CanvasController(canvasEl, editor, assets, {});
+    controller = new CanvasController(canvasEl, editor, assets, { onVakTik: (id) => kiesFoto(id) });
     if (import.meta.env.MODE === 'e2e') (window as any).__collage = { editor, assets, controller, maakVorm };
   });
   onDestroy(() => controller?.destroy());
+
+  let fotoInput: HTMLInputElement;
+  let fotoVak: string | undefined;
+
+  function meldFout(e: unknown) {
+    toon(e instanceof ImportFout ? FOUTTEKST[e.code] : 'Er ging iets mis. Probeer het nog eens.', 'warning');
+  }
+
+  function kiesFoto(vakId?: string) {
+    fotoVak = vakId;
+    fotoInput.value = '';
+    fotoInput.click();
+  }
+
+  async function voegFotosToe(blobs: Blob[], positie?: { x: number; y: number }, vakId?: string) {
+    for (const [i, b] of blobs.entries()) {
+      try {
+        await voegFotoToe(editor, assets, b, { positie: positie && { x: positie.x + i * 40, y: positie.y + i * 40 }, vakId: i === 0 ? vakId : undefined });
+      } catch (e) { meldFout(e); }
+    }
+  }
+
+  async function opDrop(e: DragEvent) {
+    e.preventDefault();
+    if (!e.dataTransfer) return;
+    const positie = controller?.naarCanvas(e.clientX, e.clientY);
+    try { await voegFotosToe(await afbeeldingenUit(e.dataTransfer), positie); } catch (err) { meldFout(err); }
+  }
+
+  async function opPlak(e: ClipboardEvent) {
+    if ((e.target as HTMLElement).closest('input, textarea')) return;
+    if (!e.clipboardData || ![...e.clipboardData.items].some((i) => i.type.startsWith('image/'))) return;
+    e.preventDefault();
+    try { await voegFotosToe(await afbeeldingenUit(e.clipboardData)); } catch (err) { meldFout(err); }
+  }
 
   function opToets(e: KeyboardEvent) {
     if ((e.target as HTMLElement).closest('input, textarea, [contenteditable]')) return;
@@ -59,7 +98,7 @@
   }
 </script>
 
-<svelte:window onkeydown={opToets} />
+<svelte:window onkeydown={opToets} onpaste={opPlak} />
 
 <div class="editor">
   <div class="vak-boven">
@@ -74,7 +113,7 @@
   </div>
   <!-- opdrachtbalk -->
   <div class="vak-tools"><GereedschapBalk actief={paneel} onKies={(p) => (paneel = paneel === p ? null : p)} /></div>
-  <div class="vak-canvas" id="canvas-vlak">
+  <div class="vak-canvas" id="canvas-vlak" role="application" aria-label="Collage" ondragover={(e) => e.preventDefault()} ondrop={opDrop}>
     <div class="canvas" bind:this={canvasEl}></div>
     {#if geselecteerd}<ContextBalk {editor} el={geselecteerd} />{/if}
   </div>
@@ -82,9 +121,12 @@
     <aside class="vak-paneel" id="paneel-{paneel}">
       {#if paneel === 'vormen'}<VormPaneel {editor} el={geselecteerd} />{/if}
       {#if paneel === 'stickers'}<StickerPaneel {editor} {assets} el={geselecteerd} {startPakket} />{/if}
+      {#if paneel === 'foto'}<FotoPaneel {editor} el={geselecteerd} onKiesFoto={kiesFoto} />{/if}
       <!-- panelen -->
     </aside>
   {/if}
+  <input id="foto-input" class="visueel-verborgen" type="file" accept="image/*" multiple bind:this={fotoInput}
+    onchange={() => voegFotosToe([...(fotoInput.files ?? [])], undefined, fotoVak)} />
 </div>
 
 {#if vraagTerug}

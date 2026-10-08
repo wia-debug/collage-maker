@@ -3,6 +3,7 @@ import Konva from 'konva';
 import { renderElement } from './index';
 import { maakFoto, maakSticker, maakVorm } from '../document/create';
 import { stickerKey } from '../assets/store';
+import { renderFoto } from './foto';
 
 const leeg = { image: () => undefined };
 
@@ -47,5 +48,23 @@ describe('renderElement', () => {
   it('onbekend type geeft een duidelijke fout (tot de renderer bestaat)', () => {
     const f = maakFoto({ x: 0, y: 0, breedte: 10, hoogte: 10, assetId: null });
     expect(() => renderElement({ ...f, type: 'onbekend' } as never, leeg)).toThrow('Geen renderer voor onbekend');
+  });
+});
+
+describe('renderFoto', () => {
+  it('leeg vak toont een gestreepte rechthoek met naam leeg-vak', () => {
+    const f = maakFoto({ x: 50, y: 50, breedte: 100, hoogte: 80, assetId: null });
+    const g = renderFoto(f, leeg);
+    expect(g.findOne('.leeg-vak')).toBeDefined();
+  });
+
+  it('foto met afbeelding gebruikt uitsnede als crop', () => {
+    const img = document.createElement('canvas');
+    img.width = 400; img.height = 200;
+    const f = { ...maakFoto({ x: 0, y: 0, breedte: 100, hoogte: 100, assetId: 'a1' }), uitsnede: { x: 100, y: 0, breedte: 200, hoogte: 200 } };
+    const node = renderFoto(f, { image: (k) => (k === 'a1' ? img : undefined) }).findOne('Image') as Konva.Image;
+    expect(node.image()).toBe(img);
+    expect(node.crop()).toEqual({ x: 100, y: 0, width: 200, height: 200 });
+    expect(node.width()).toBe(100);
   });
 });
