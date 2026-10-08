@@ -140,4 +140,57 @@ describe('CanvasController', () => {
     g.fire('dragend', { target: g }, true);
     expect(ctrl.stage.find('.gids')).toHaveLength(0);
   });
+  describe('knijpen', () => {
+    const vingers = (a: [number, number], b: [number, number]) =>
+      ({ evt: { touches: [{ clientX: a[0], clientY: a[1] }, { clientX: b[0], clientY: b[1] }], preventDefault() {} } }) as any;
+    const los = () => ({ evt: { touches: [] } }) as any;
+
+    it('knijpen op het geselecteerde element is één undo-stap', () => {
+      const { editor, ctrl } = opzet();
+      const v = maakVorm({ x: 100, y: 100, vorm: 'rechthoek', breedte: 50, hoogte: 50 });
+      editor.add(v);
+      ctrl.stage.fire('touchmove', vingers([100, 100], [200, 100]));
+      ctrl.stage.fire('touchmove', vingers([50, 100], [250, 100]));
+      ctrl.stage.fire('touchend', los());
+      expect(editor.get().collage.elementen[0].schaalX).toBeCloseTo(2, 5);
+      editor.undo();
+      expect(editor.get().collage.elementen[0].schaalX).toBe(1);
+      editor.undo();
+      expect(editor.get().collage.elementen).toHaveLength(0);
+    });
+
+    it('slepen gevolgd door knijpen is één undo-stap', () => {
+      const { editor, ctrl } = opzet();
+      const v = maakVorm({ x: 100, y: 100, vorm: 'rechthoek', breedte: 50, hoogte: 50 });
+      editor.add(v);
+      const g = ctrl.group(v.id)!;
+      g.x(160);
+      ctrl.stage.fire('touchmove', vingers([100, 100], [200, 100]));
+      g.fire('dragend', { target: g }, true);
+      ctrl.stage.fire('touchmove', vingers([50, 100], [250, 100]));
+      ctrl.stage.fire('touchend', los());
+      expect(editor.get().collage.elementen[0].schaalX).toBeCloseTo(2, 5);
+      editor.undo();
+      expect(editor.get().collage.elementen[0].x).toBe(100);
+      expect(editor.get().collage.elementen[0].schaalX).toBe(1);
+      editor.undo();
+      expect(editor.get().collage.elementen).toHaveLength(0);
+    });
+
+    it('knijpen op een vergrendeld element of zonder selectie doet niets', () => {
+      const { editor, ctrl } = opzet();
+      const v = maakVorm({ x: 100, y: 100, vorm: 'rechthoek', breedte: 50, hoogte: 50 });
+      editor.add(v);
+      editor.update(v.id, { vergrendeld: true });
+      const voor = editor.get().collage;
+      ctrl.stage.fire('touchmove', vingers([100, 100], [200, 100]));
+      ctrl.stage.fire('touchmove', vingers([50, 100], [250, 100]));
+      ctrl.stage.fire('touchend', los());
+      editor.select(null);
+      ctrl.stage.fire('touchmove', vingers([100, 100], [200, 100]));
+      ctrl.stage.fire('touchmove', vingers([50, 100], [250, 100]));
+      ctrl.stage.fire('touchend', los());
+      expect(editor.get().collage).toBe(voor);
+    });
+  });
 });

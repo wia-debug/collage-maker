@@ -155,7 +155,7 @@ export class CanvasController {
     });
     this.content.on('dragend', (e) => {
       const g = e.target;
-      if (g.name() !== 'element') return;
+      if (g.name() !== 'element' || this.knijp) return;
       this.editor.update(g.id(), { x: g.x(), y: g.y() });
     });
     this.transformer.on('transformend', () => {
@@ -185,8 +185,8 @@ export class CanvasController {
       evt.preventDefault();
       const [p1, p2] = this.touchPunten(evt);
       if (!this.knijp || this.knijp.id !== n.el.id) {
-        n.group.stopDrag();
         this.knijp = { id: n.el.id, p1, p2, x: n.group.x(), y: n.group.y(), sx: n.group.scaleX(), sy: n.group.scaleY(), rot: n.group.rotation() };
+        n.group.stopDrag();
         return;
       }
       const d = pinchDelta(this.knijp.p1, this.knijp.p2, p1, p2);
