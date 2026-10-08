@@ -2,6 +2,7 @@ import Konva from 'konva';
 import type { FotoElement } from '../document/types';
 import { baseGroup, type RenderCtx } from './base';
 import { kaderNodes } from './kaders';
+import { pasFilterToe } from './filters';
 import { tracePad, type PathCtx } from './paths';
 
 export function fotoNode(el: FotoElement, ctx: RenderCtx): Konva.Shape {
@@ -14,10 +15,15 @@ export function fotoNode(el: FotoElement, ctx: RenderCtx): Konva.Shape {
     });
   }
   const u = el.uitsnede;
-  return new Konva.Image({
+  const node = new Konva.Image({
     image: img, width: el.breedte, height: el.hoogte,
     ...(u ? { crop: { x: u.x, y: u.y, width: u.breedte, height: u.hoogte } } : {}),
   });
+  if (el.filter !== 'normaal' || el.helderheid || el.contrast) {
+    node.filters([(d: ImageData) => pasFilterToe(d, el.filter, el.helderheid, el.contrast)]);
+    node.cache();
+  }
+  return node;
 }
 
 function plusTeken(el: FotoElement): Konva.Shape {

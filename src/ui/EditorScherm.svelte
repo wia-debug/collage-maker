@@ -123,7 +123,7 @@
     <aside class="vak-paneel" id="paneel-{paneel}">
       {#if paneel === 'vormen'}<VormPaneel {editor} el={geselecteerd} />{/if}
       {#if paneel === 'stickers'}<StickerPaneel {editor} {assets} el={geselecteerd} {startPakket} />{/if}
-      {#if paneel === 'foto'}<FotoPaneel {editor} el={geselecteerd} onKiesFoto={kiesFoto} />{/if}
+      {#if paneel === 'foto'}<FotoPaneel {editor} {assets} el={geselecteerd} onKiesFoto={kiesFoto} />{/if}
       <!-- panelen -->
     </aside>
   {/if}

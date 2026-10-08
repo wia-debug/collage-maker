@@ -108,3 +108,19 @@ test('masker en kader kiezen', async ({ page }) => {
   expect(f.masker).toBe('hart');
   expect(f.kader.stijl).toBe('polaroid');
 });
+
+test('filter en helderheid kiezen', async ({ page }) => {
+  await openNieuweCollage(page);
+  await page.click('#tool-foto');
+  const chooser = page.waitForEvent('filechooser');
+  await page.click('#foto-kiezen');
+  await (await chooser).setFiles({ name: 'foto.png', mimeType: 'image/png', buffer: await maakPng(page) });
+  await page.click('#filter-sepia');
+  await page.$eval('#schuif-helder', (el: HTMLInputElement) => {
+    el.value = '40';
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  const [f] = await elementen(page);
+  expect(f.filter).toBe('sepia');
+  expect(f.helderheid).toBe(40);
+});

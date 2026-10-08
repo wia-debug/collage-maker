@@ -52,6 +52,15 @@ describe('renderElement', () => {
 });
 
 describe('renderFoto', () => {
+  it('filter zet een gecachte node met filter', () => {
+    const img = document.createElement('canvas');
+    img.width = 10; img.height = 10;
+    const f = { ...maakFoto({ x: 0, y: 0, breedte: 10, hoogte: 10, assetId: 'a1' }), filter: 'sepia' as const };
+    const node = renderFoto(f, { image: () => img }).findOne('Image') as Konva.Image;
+    expect(node.filters()).toHaveLength(1);
+    expect(node.isCached()).toBe(true);
+  });
+
   it('leeg vak toont een gestreepte rechthoek met naam leeg-vak', () => {
     const f = maakFoto({ x: 50, y: 50, breedte: 100, hoogte: 80, assetId: null });
     const g = renderFoto(f, leeg);

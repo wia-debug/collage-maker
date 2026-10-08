@@ -1,12 +1,22 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import KleurPalet from './KleurPalet.svelte';
+  import Schuif from './Schuif.svelte';
+  import { FILTERS, filterVoorbeeld } from '../elements/filters';
+  import type { AssetStore } from '../assets/store';
   import { KADERS, MASKERS } from '../elements/kaders';
   import type { Element } from '../document/types';
   import type { Editor } from '../editor/store';
 
-  let { editor, el, onKiesFoto }: { editor: Editor; el: Element | null; onKiesFoto: (vakId?: string) => void } = $props();
+  let { editor, assets, el, onKiesFoto }: { editor: Editor; assets: AssetStore; el: Element | null; onKiesFoto: (vakId?: string) => void } = $props();
   const foto = $derived(el?.type === 'foto' ? el : null);
+  const assetId = $derived(foto?.assetId ?? null);
+  const voorbeelden = $derived.by(() => {
+    if (!assetId) return {} as Record<string, string>;
+    const img = assets.image(assetId);
+    if (!img) return {};
+    return Object.fromEntries(FILTERS.map((f) => [f.naam, filterVoorbeeld(img, img.naturalWidth, img.naturalHeight, f.naam)]));
+  });
 </script>
 
 <h2>Foto</h2>
@@ -33,7 +43,17 @@
     <h3>Kleur kader</h3>
     <KleurPalet waarde={foto.kader.kleur} onKies={(k) => k && editor.update(foto.id, { kader: { ...foto.kader, kleur: k } })} />
   {/if}
-  <!-- filter-opties -->
+  <h3>Filter</h3>
+  <div class="filters">
+    {#each FILTERS as f}
+      <button id="filter-{f.naam}" class:actief={foto.filter === f.naam} onclick={() => editor.update(foto.id, { filter: f.naam })}>
+        {#if voorbeelden[f.naam]}<img src={voorbeelden[f.naam]} alt="" />{/if}
+        <span>{f.label}</span>
+      </button>
+    {/each}
+  </div>
+  <Schuif label="Helder" min={-100} max={100} waarde={foto.helderheid} onWijzig={(v) => editor.update(foto.id, { helderheid: v })} />
+  <Schuif label="Contrast" min={-100} max={100} waarde={foto.contrast} onWijzig={(v) => editor.update(foto.id, { contrast: v })} />
 {/if}
 
 <style>
@@ -42,4 +62,8 @@
   .raster { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
   .raster button { flex-direction: column; min-height: 64px; background: var(--creme); font-size: 0.85rem; padding: 4px; }
   .raster button.actief { background: var(--zon); }
+  .filters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .filters button { flex-direction: column; padding: 6px; background: var(--creme); font-size: 0.8rem; }
+  .filters button.actief { background: var(--zon); }
+  .filters img { width: 64px; height: 64px; border-radius: 10px; }
 </style>
