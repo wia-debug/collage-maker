@@ -1,0 +1,17 @@
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: 'e2e',
+  timeout: 30_000,
+  use: { baseURL: 'http://localhost:4173' },
+  webServer: {
+    command: 'npx vite build --mode e2e && npx vite preview --port 4173 --strictPort',
+    port: 4173,
+    reuseExistingServer: !process.env.CI,
+    timeout: 180_000,
+  },
+  projects: [
+    { name: 'ipad', use: { ...devices['iPad Pro 11 landscape'] } },
+    { name: 'chromebook', use: { ...devices['Desktop Chrome'], viewport: { width: 1366, height: 768 } } },
+  ],
+});

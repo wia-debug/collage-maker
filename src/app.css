@@ -1,0 +1,37 @@
+:root {
+  --creme: #fff8ee;
+  --inkt: #2d2a32;
+  --koraal: #ff6b6b;
+  --zon: #ffc94d;
+  --mint: #4ecdc4;
+  --hemel: #5aa9f2;
+  --lavendel: #a78bfa;
+  --paneel: #ffffff;
+  --rand: #ede3d3;
+  --werkvlak: #efe6d8;
+  --schaduw: 0 6px 20px rgba(45, 42, 50, 0.12);
+  --radius: 20px;
+  --knop: 56px;
+  font-family: 'Nunito', system-ui, sans-serif;
+  color: var(--inkt);
+}
+html, body { margin: 0; height: 100%; background: var(--creme); overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+body { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+#app { height: 100dvh; }
+h1, h2, h3 { margin: 0 0 12px; font-weight: 800; }
+button {
+  font: inherit; font-weight: 700; color: inherit;
+  min-width: var(--knop); min-height: var(--knop);
+  border: 0; border-radius: 16px; background: var(--paneel);
+  cursor: pointer; touch-action: manipulation;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+button:disabled { opacity: 0.35; cursor: default; }
+button:focus-visible { outline: 3px solid var(--hemel); outline-offset: 2px; }
+button.hoofd { background: var(--koraal); color: #fff; padding: 0 20px; }
+button.gevaar { color: #c0392b; }
+@media (hover: hover) { button:not(:disabled):hover { filter: brightness(0.96); } }
+input, textarea, select { font: inherit; font-size: max(16px, 1em); }
+input[type='range'] { width: 100%; height: 40px; accent-color: var(--koraal); }
+.visueel-verborgen { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
