@@ -18,6 +18,7 @@
   import TekstPaneel from './TekstPaneel.svelte';
   import TekstInvoer from './TekstInvoer.svelte';
   import TekenPaneel from './TekenPaneel.svelte';
+  import AchtergrondPaneel from './AchtergrondPaneel.svelte';
   import { tekstKlaar } from '../editor/tekst-acties';
   import { laadLettertypes } from '../assets/fonts';
   import { voegFotoToe } from '../editor/foto-acties';
@@ -160,6 +161,7 @@
       {#if paneel === 'foto'}<FotoPaneel {editor} {assets} el={geselecteerd} onKiesFoto={kiesFoto} onBijsnijden={openBijsnijden} />{/if}
       {#if paneel === 'tekst'}<TekstPaneel {editor} el={geselecteerd} onNieuw={() => tekstInvoer.openen('', null)} onWijzig={wijzigTekst} />{/if}
       {#if paneel === 'tekenen'}<TekenPaneel {controller} />{/if}
+      {#if paneel === 'achtergrond'}<AchtergrondPaneel {editor} {assets} achtergrond={$editorState.collage.achtergrond} />{/if}
       <!-- panelen -->
     </aside>
   {/if}
