@@ -1,0 +1,11 @@
+[
+  "arrow-left", "arrow-right", "arrow-up", "arrow-down", "arrow-counter-clockwise", "arrow-clockwise",
+  "download-simple", "question", "image", "text-t", "sticker", "shapes", "pencil-simple", "pencil",
+  "paint-bucket", "trash", "copy", "arrow-line-up", "arrow-line-down", "flip-horizontal", "lock",
+  "lock-open", "crop", "x", "check", "plus", "prohibit", "eraser", "highlighter-circle", "paint-brush",
+  "pen", "file-pdf", "file-png", "puzzle-piece", "trophy", "sparkle", "square", "circle", "heart", "star",
+  "triangle", "line-segment", "cloud", "drop", "text-b", "text-italic", "text-align-left",
+  "text-align-center", "text-align-right", "chat-circle", "warning", "info", "check-circle",
+  "frame-corners", "magic-wand", "sliders", "paw-print", "rocket", "soccer-ball", "leaf", "cake",
+  "tree", "pizza", "car", "palette", "gradient", "dots-nine"
+]
