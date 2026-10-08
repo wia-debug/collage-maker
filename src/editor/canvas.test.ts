@@ -113,4 +113,31 @@ describe('CanvasController', () => {
     const laag = ctrl.stage.getLayers()[0];
     expect(laag.clipHeight()).toBe(1800);
   });
+
+  it('één sleepgebaar met veel bewegingen is één undo-stap', () => {
+    const { editor, ctrl } = opzet();
+    const v = maakVorm({ x: 100, y: 100, vorm: 'rechthoek', breedte: 50, hoogte: 50 });
+    editor.add(v);
+    const g = ctrl.group(v.id)!;
+    for (let i = 1; i <= 10; i++) { g.x(100 + i * 7); g.fire('dragmove', { target: g }, true); }
+    g.fire('dragend', { target: g }, true);
+    expect(editor.get().collage.elementen[0].x).not.toBe(100);
+    editor.undo();
+    expect(editor.get().collage.elementen[0].x).toBe(100);
+    editor.undo();
+    expect(editor.get().collage.elementen).toHaveLength(0);
+  });
+
+  it('dragmove klikt vast op het midden en toont een hulplijn', () => {
+    const { editor, ctrl } = opzet();
+    const v = maakVorm({ x: 100, y: 100, vorm: 'rechthoek', breedte: 100, hoogte: 100 });
+    editor.add(v);
+    const g = ctrl.group(v.id)!;
+    g.x(603);
+    g.fire('dragmove', { target: g }, true);
+    expect(g.x()).toBeCloseTo(600, 0);
+    expect(ctrl.stage.find('.gids').length).toBeGreaterThan(0);
+    g.fire('dragend', { target: g }, true);
+    expect(ctrl.stage.find('.gids')).toHaveLength(0);
+  });
 });
