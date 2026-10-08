@@ -5,6 +5,7 @@ import { renderElement, type RenderCtx } from '../elements/index';
 import { renderAchtergrond } from '../elements/achtergrond';
 import type { Editor, EditorState } from './store';
 import { snap, type Gids } from './snap';
+import { alleenTransform } from './vergelijk';
 import { pinchDelta, type Punt } from './pinch';
 
 export interface ControllerOpties { onVakTik?(id: string): void }
@@ -97,6 +98,15 @@ export class CanvasController {
       gezien.add(el.id);
       const huidig = this.nodes.get(el.id);
       if (huidig && huidig.el === el) continue;
+      if (huidig && alleenTransform(huidig.el, el)) {
+        huidig.group.setAttrs({
+          x: el.x, y: el.y, rotation: el.rotatie,
+          scaleX: el.schaalX * (el.gespiegeld ? -1 : 1), scaleY: el.schaalY,
+          draggable: !el.vergrendeld,
+        });
+        huidig.el = el;
+        continue;
+      }
       huidig?.group.destroy();
       const group = renderElement(el, this.assets);
       this.content.add(group);

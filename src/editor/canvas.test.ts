@@ -29,7 +29,7 @@ describe('CanvasController', () => {
     expect(ctrl.stage.x()).toBeCloseTo((800 - 1200 * s) / 2, 5);
   });
 
-  it('voegt nodes toe, vervangt gewijzigde en verwijdert gewiste', () => {
+  it('voegt nodes toe, hergebruikt bij verplaatsen en verwijdert gewiste', () => {
     const { editor, ctrl } = opzet();
     const v = maakVorm({ x: 100, y: 100, vorm: 'rechthoek', breedte: 50, hoogte: 50 });
     editor.add(v);
@@ -37,11 +37,26 @@ describe('CanvasController', () => {
     expect(eerst.x()).toBe(100);
     editor.update(v.id, { x: 400 });
     const daarna = ctrl.group(v.id)!;
-    expect(daarna).not.toBe(eerst);
+    expect(daarna).toBe(eerst);
     expect(daarna.x()).toBe(400);
     editor.remove(v.id);
     expect(ctrl.group(v.id)).toBeUndefined();
     expect(ctrl.stage.find('.element')).toHaveLength(0);
+  });
+
+  it('hergebruikt de node bij spiegelen en vergrendelen, maakt een nieuwe bij andere wijzigingen', () => {
+    const { editor, ctrl } = opzet();
+    const v = maakVorm({ x: 100, y: 100, vorm: 'rechthoek', breedte: 50, hoogte: 50 });
+    editor.add(v);
+    const eerst = ctrl.group(v.id)!;
+    editor.update(v.id, { gespiegeld: true });
+    expect(ctrl.group(v.id)).toBe(eerst);
+    expect(eerst.scaleX()).toBeLessThan(0);
+    editor.update(v.id, { vergrendeld: true });
+    expect(ctrl.group(v.id)).toBe(eerst);
+    expect(eerst.draggable()).toBe(false);
+    editor.update(v.id, { vulling: '#112233' });
+    expect(ctrl.group(v.id)).not.toBe(eerst);
   });
 
   it('houdt de laagvolgorde van het document aan, achtergrond onderaan', () => {

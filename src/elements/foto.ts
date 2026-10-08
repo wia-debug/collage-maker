@@ -21,7 +21,7 @@ export function fotoNode(el: FotoElement, ctx: RenderCtx): Konva.Shape {
   });
   if (el.filter !== 'normaal' || el.helderheid || el.contrast) {
     node.filters([(d: ImageData) => pasFilterToe(d, el.filter, el.helderheid, el.contrast)]);
-    node.cache();
+    node.cache({ pixelRatio: 1 });
   }
   return node;
 }
