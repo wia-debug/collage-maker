@@ -1,6 +1,8 @@
 import Konva from 'konva';
 import type { FotoElement } from '../document/types';
 import { baseGroup, type RenderCtx } from './base';
+import { kaderNodes } from './kaders';
+import { tracePad, type PathCtx } from './paths';
 
 export function fotoNode(el: FotoElement, ctx: RenderCtx): Konva.Shape {
   const img = el.assetId ? ctx.image(el.assetId) : undefined;
@@ -35,7 +37,16 @@ function plusTeken(el: FotoElement): Konva.Shape {
 export function renderFoto(el: FotoElement, ctx: RenderCtx): Konva.Group {
   const g = baseGroup(el);
   const node = fotoNode(el, ctx);
-  g.add(node);
-  if (node.name() === 'leeg-vak') g.add(plusTeken(el));
+  const leeg = node.name() === 'leeg-vak';
+  const binnen = new Konva.Group({ name: 'foto-binnen' });
+  if (el.masker !== 'rechthoek' && !leeg) {
+    binnen.clipFunc((c) => tracePad(c as unknown as PathCtx, el.masker, el.breedte, el.hoogte));
+  }
+  binnen.add(node);
+  const { achter, voor } = leeg ? { achter: [], voor: [] } : kaderNodes(el.kader.stijl, el.kader.kleur, el.breedte, el.hoogte, el.masker);
+  g.add(...achter);
+  g.add(binnen);
+  if (leeg) g.add(plusTeken(el));
+  g.add(...voor);
   return g;
 }

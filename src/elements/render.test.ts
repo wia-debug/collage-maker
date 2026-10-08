@@ -67,4 +67,20 @@ describe('renderFoto', () => {
     expect(node.crop()).toEqual({ x: 100, y: 0, width: 200, height: 200 });
     expect(node.width()).toBe(100);
   });
+
+  it('niet-rechthoekig masker knipt de foto via clipFunc', () => {
+    const img = document.createElement('canvas');
+    const f = { ...maakFoto({ x: 0, y: 0, breedte: 100, hoogte: 100, assetId: 'a1' }), masker: 'hart' as const };
+    const g = renderFoto(f, { image: () => img });
+    const binnen = g.findOne('.foto-binnen') as Konva.Group;
+    expect(binnen.clipFunc()).toBeTypeOf('function');
+  });
+
+  it('kader effen komt boven de foto', () => {
+    const img = document.createElement('canvas');
+    const f = { ...maakFoto({ x: 0, y: 0, breedte: 100, hoogte: 100, assetId: 'a1' }), kader: { stijl: 'effen' as const, kleur: '#FF0000' } };
+    const g = renderFoto(f, { image: () => img });
+    const kinderen = g.getChildren();
+    expect(kinderen[kinderen.length - 1].name()).toBe('kader');
+  });
 });

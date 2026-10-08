@@ -95,3 +95,16 @@ test('foto slepen naast het canvas voegt de foto toe en laat de pagina staan', a
   await page.waitForFunction(() => window.__collage.editor.get().collage.elementen.length === 1);
   expect(page.url()).toBe(url);
 });
+
+test('masker en kader kiezen', async ({ page }) => {
+  await openNieuweCollage(page);
+  await page.click('#tool-foto');
+  const chooser = page.waitForEvent('filechooser');
+  await page.click('#foto-kiezen');
+  await (await chooser).setFiles({ name: 'foto.png', mimeType: 'image/png', buffer: await maakPng(page) });
+  await page.click('#masker-hart');
+  await page.click('#kader-polaroid');
+  const [f] = await elementen(page);
+  expect(f.masker).toBe('hart');
+  expect(f.kader.stijl).toBe('polaroid');
+});
