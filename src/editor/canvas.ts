@@ -54,6 +54,8 @@ export class CanvasController {
     this.ui.add(this.transformer);
     this.stage.add(this.content, this.ui);
     this.bindEvents();
+    window.addEventListener('pointerup', this.opVensterLos);
+    window.addEventListener('pointercancel', this.opVensterAnnuleer);
     this.stopSync = editor.state.subscribe((s) => this.sync(s));
     this.resizeObs = new ResizeObserver(() => this.fit());
     this.resizeObs.observe(container);
@@ -79,12 +81,35 @@ export class CanvasController {
   }
 
   setGereedschap(g: Gereedschap, pen?: Partial<{ gereedschap: TekenGereedschap; kleur: string; dikte: number }>): void {
+    this.verwerpStreek();
     this.gereedschap = g;
     if (pen) this.pen = { ...this.pen, ...pen };
     const tekenen = g !== 'selecteer';
     this.content.listening(g !== 'teken');
     for (const n of this.nodes.values()) n.group.draggable(!tekenen && !n.el.vergrendeld);
     if (tekenen && this.editor.get().selectedId) this.editor.select(null);
+  }
+
+  private opVensterLos = (e: PointerEvent): void => this.beeindigStreek(e.pointerId, true);
+  private opVensterAnnuleer = (e: PointerEvent): void => this.beeindigStreek(e.pointerId, false);
+
+  private verwerpStreek(): void {
+    this.streek?.lijn.destroy();
+    this.streek = null;
+    this.gumPointer = null;
+    this.ui.batchDraw();
+  }
+
+  private beeindigStreek(pointerId: number, commit: boolean): void {
+    if (this.gumPointer === pointerId) { this.gumPointer = null; return; }
+    if (!this.streek || this.streek.pointerId !== pointerId) return;
+    const { lijn, punten } = this.streek;
+    this.streek = null;
+    lijn.destroy();
+    this.ui.batchDraw();
+    if (!commit) return;
+    this.editor.add(maakTekening(punten, this.pen.gereedschap, this.pen.kleur, this.pen.dikte));
+    this.editor.select(null);
   }
 
   private gum(): void {
@@ -98,6 +123,9 @@ export class CanvasController {
 
   destroy(): void {
     this.stopSync();
+    this.verwerpStreek();
+    window.removeEventListener('pointerup', this.opVensterLos);
+    window.removeEventListener('pointercancel', this.opVensterAnnuleer);
     this.resizeObs.disconnect();
     this.stage.destroy();
   }
@@ -201,21 +229,15 @@ export class CanvasController {
       const pts = this.streek.punten;
       if (Math.hypot(p.x - pts[pts.length - 2], p.y - pts[pts.length - 1]) < 2) return;
       pts.push(p.x, p.y);
-      this.streek.lijn.points(pts.length === 2 ? [...pts, pts[0] + 0.5, pts[1] + 0.5] : pts);
+      this.streek.lijn.points(pts);
       this.ui.batchDraw();
     });
     this.stage.on('pointerup pointercancel', (e) => {
-      const evt = e.evt as PointerEvent;
-      if (this.gumPointer === evt.pointerId) { this.gumPointer = null; return; }
-      if (!this.streek || this.streek.pointerId !== evt.pointerId) return;
-      const { lijn, punten } = this.streek;
-      this.streek = null;
-      lijn.destroy();
-      this.editor.add(maakTekening(punten, this.pen.gereedschap, this.pen.kleur, this.pen.dikte));
-      this.editor.select(null);
+      this.beeindigStreek((e.evt as PointerEvent).pointerId, e.type === 'pointerup');
     });
     this.stage.on('contextmenu', (e) => {
       e.evt.preventDefault();
+      if (this.gereedschap !== 'selecteer') return;
       const n = this.elementVan(e.target);
       if (n) this.editor.select(n.el.id);
     });

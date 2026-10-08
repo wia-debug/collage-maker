@@ -221,4 +221,101 @@ describe('CanvasController', () => {
     ctrl.setGereedschap('selecteer');
     expect(ctrl.group(v.id)!.draggable()).toBe(true);
   });
+
+  describe('tekenen en gummen', () => {
+    const ev = (pointerId: number) => ({ evt: { pointerId } }) as any;
+    const stubPos = (c: CanvasController, pos: { x: number; y: number }) => {
+      (c as any).content.getRelativePointerPosition = () => pos;
+    };
+    const aantal = (e: ReturnType<typeof opzet>['editor']) => e.get().collage.elementen.length;
+    const uiLijnen = (c: CanvasController) => (c as any).ui.find('Line').length;
+
+    function streek(c: CanvasController, id = 1) {
+      stubPos(c, { x: 10, y: 10 });
+      c.stage.fire('pointerdown', ev(id));
+      stubPos(c, { x: 60, y: 60 });
+      c.stage.fire('pointermove', ev(id));
+    }
+
+    it('een streek is precies één geschiedenisstap', () => {
+      const { editor, ctrl } = opzet();
+      ctrl.setGereedschap('teken');
+      streek(ctrl);
+      ctrl.stage.fire('pointerup', ev(1));
+      expect(aantal(editor)).toBe(1);
+      expect(editor.get().collage.elementen[0].type).toBe('tekening');
+      editor.undo();
+      expect(aantal(editor)).toBe(0);
+      expect(editor.get().canUndo).toBe(false);
+    });
+
+    it('een tweede pointerId tijdens een streek wordt genegeerd', () => {
+      const { editor, ctrl } = opzet();
+      ctrl.setGereedschap('teken');
+      streek(ctrl, 1);
+      stubPos(ctrl, { x: 300, y: 300 });
+      ctrl.stage.fire('pointerdown', ev(2));
+      ctrl.stage.fire('pointermove', ev(2));
+      ctrl.stage.fire('pointerup', ev(2));
+      expect(aantal(editor)).toBe(0);
+      ctrl.stage.fire('pointerup', ev(1));
+      expect(aantal(editor)).toBe(1);
+    });
+
+    it('pointerup op window rondt een streek af en een nieuwe kan beginnen', () => {
+      const { editor, ctrl } = opzet();
+      ctrl.setGereedschap('teken');
+      streek(ctrl);
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }));
+      expect(aantal(editor)).toBe(1);
+      expect(uiLijnen(ctrl)).toBe(0);
+      streek(ctrl);
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }));
+      expect(aantal(editor)).toBe(2);
+    });
+
+    it('pointercancel voegt niets toe', () => {
+      const { editor, ctrl } = opzet();
+      ctrl.setGereedschap('teken');
+      streek(ctrl);
+      ctrl.stage.fire('pointercancel', ev(1));
+      expect(aantal(editor)).toBe(0);
+      expect(uiLijnen(ctrl)).toBe(0);
+      streek(ctrl);
+      window.dispatchEvent(new PointerEvent('pointercancel', { pointerId: 1 }));
+      expect(aantal(editor)).toBe(0);
+    });
+
+    it('van gereedschap wisselen tijdens een streek voegt niets toe', () => {
+      const { editor, ctrl } = opzet();
+      ctrl.setGereedschap('teken');
+      streek(ctrl);
+      expect(uiLijnen(ctrl)).toBe(1);
+      ctrl.setGereedschap('selecteer');
+      expect(uiLijnen(ctrl)).toBe(0);
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }));
+      expect(aantal(editor)).toBe(0);
+    });
+
+    it('gum verwijdert een tekening maar geen vorm op dezelfde plek', () => {
+      const { editor, ctrl } = opzet();
+      const v = maakVorm({ x: 100, y: 100, vorm: 'rechthoek', breedte: 50, hoogte: 50 });
+      editor.add(v);
+      ctrl.setGereedschap('teken');
+      streek(ctrl);
+      ctrl.stage.fire('pointerup', ev(1));
+      const t = editor.get().collage.elementen.find((e) => e.type === 'tekening')!;
+      ctrl.setGereedschap('gum');
+      const s = ctrl.stage as any;
+      s.getPointerPosition = () => ({ x: 1, y: 1 });
+      s.getIntersection = () => ctrl.group(v.id)!.findOne('Shape');
+      ctrl.stage.fire('pointerdown', ev(1));
+      ctrl.stage.fire('pointerup', ev(1));
+      expect(aantal(editor)).toBe(2);
+      s.getIntersection = () => ctrl.group(t.id)!.findOne('Line');
+      ctrl.stage.fire('pointerdown', ev(1));
+      ctrl.stage.fire('pointerup', ev(1));
+      expect(editor.get().collage.elementen.map((e) => e.id)).toEqual([v.id]);
+    });
+  });
 });
