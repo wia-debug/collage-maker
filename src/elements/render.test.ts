@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import Konva from 'konva';
 import { renderElement } from './index';
-import { maakFoto, maakSticker, maakVorm } from '../document/create';
+import { maakFoto, maakSticker, maakTekst, maakVorm } from '../document/create';
 import { stickerKey } from '../assets/store';
 import { renderFoto } from './foto';
+import { renderTekst } from './tekst';
 
 const leeg = { image: () => undefined };
 
@@ -91,5 +92,22 @@ describe('renderFoto', () => {
     const g = renderFoto(f, { image: () => img });
     const kinderen = g.getChildren();
     expect(kinderen[kinderen.length - 1].name()).toBe('kader');
+  });
+});
+
+describe('renderTekst', () => {
+  it('tekst met ballon heeft eerst een rechthoek, offset op de echte hoogte', () => {
+    const t = { ...maakTekst({ x: 0, y: 0, tekst: 'Hallo\nwereld', grootte: 50, breedte: 300 }), ballon: '#FFE14D' };
+    const g = renderTekst(t, leeg);
+    const [rect, text] = g.getChildren();
+    expect(rect).toBeInstanceOf(Konva.Rect);
+    expect((text as Konva.Text).text()).toBe('Hallo\nwereld');
+    expect(g.offsetY()).toBeCloseTo((text as Konva.Text).height() / 2, 3);
+  });
+
+  it('vet en schuin worden fontStyle', () => {
+    const t = { ...maakTekst({ x: 0, y: 0, tekst: 'A' }), vet: true, schuin: true };
+    const text = renderTekst(t, leeg).findOne('Text') as Konva.Text;
+    expect(text.fontStyle()).toBe('italic bold');
   });
 });

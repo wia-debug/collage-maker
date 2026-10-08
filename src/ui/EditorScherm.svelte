@@ -15,6 +15,10 @@
   import VormPaneel from './VormPaneel.svelte';
   import StickerPaneel from './StickerPaneel.svelte';
   import FotoPaneel from './FotoPaneel.svelte';
+  import TekstPaneel from './TekstPaneel.svelte';
+  import TekstInvoer from './TekstInvoer.svelte';
+  import { tekstKlaar } from '../editor/tekst-acties';
+  import { laadLettertypes } from '../assets/fonts';
   import { voegFotoToe } from '../editor/foto-acties';
   import { afbeeldingenUit, FOUTTEKST, ImportFout } from '../import/afbeelding';
   import { toon } from './toast';
@@ -41,11 +45,18 @@
   });
 
   onMount(async () => {
-    await assets.preload(editor.get().collage);
+    await Promise.all([assets.preload(editor.get().collage), laadLettertypes()]);
     controller = new CanvasController(canvasEl, editor, assets, { onVakTik: (id) => kiesFoto(id) });
     if (import.meta.env.MODE === 'e2e') (window as any).__collage = { editor, assets, controller, maakVorm };
   });
   onDestroy(() => controller?.destroy());
+
+  let tekstInvoer: { openen(tekst: string, id: string | null): void };
+
+  function wijzigTekst(id: string) {
+    const el = editor.get().collage.elementen.find((e) => e.id === id);
+    if (el?.type === 'tekst') tekstInvoer.openen(el.tekst, id);
+  }
 
   let bijsnijden = $state<{ id: string; bron: HTMLImageElement; start: Uitsnede | null } | null>(null);
 
@@ -134,13 +145,14 @@
   <div class="vak-tools"><GereedschapBalk actief={paneel} onKies={(p) => (paneel = paneel === p ? null : p)} /></div>
   <div class="vak-canvas" id="canvas-vlak" role="application" aria-label="Collage">
     <div class="canvas" bind:this={canvasEl}></div>
-    {#if geselecteerd}<ContextBalk {editor} el={geselecteerd} onBijsnijden={() => openBijsnijden(geselecteerd!.id)} />{/if}
+    {#if geselecteerd}<ContextBalk {editor} el={geselecteerd} onTekst={() => wijzigTekst(geselecteerd!.id)} onBijsnijden={() => openBijsnijden(geselecteerd!.id)} />{/if}
   </div>
   {#if paneel}
     <aside class="vak-paneel" id="paneel-{paneel}">
       {#if paneel === 'vormen'}<VormPaneel {editor} el={geselecteerd} />{/if}
       {#if paneel === 'stickers'}<StickerPaneel {editor} {assets} el={geselecteerd} {startPakket} />{/if}
       {#if paneel === 'foto'}<FotoPaneel {editor} {assets} el={geselecteerd} onKiesFoto={kiesFoto} onBijsnijden={openBijsnijden} />{/if}
+      {#if paneel === 'tekst'}<TekstPaneel {editor} el={geselecteerd} onNieuw={() => tekstInvoer.openen('', null)} onWijzig={wijzigTekst} />{/if}
       <!-- panelen -->
     </aside>
   {/if}
@@ -162,6 +174,8 @@
 {#if bijsnijden}
   <BijsnijDialoog bron={bijsnijden.bron} start={bijsnijden.start} onKlaar={klaarBijsnijden} onAnnuleer={() => (bijsnijden = null)} />
 {/if}
+
+<TekstInvoer bind:this={tekstInvoer} onKlaar={(t, id) => tekstKlaar(editor, id, t)} />
 
 <style>
   .editor {
