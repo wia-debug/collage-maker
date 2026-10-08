@@ -1,5 +1,7 @@
 import Konva from 'konva';
-import type { Achtergrond, Element, Formaat } from '../document/types';
+import type { Achtergrond, Element, Formaat, TekenGereedschap } from '../document/types';
+import { maakTekening } from '../document/create';
+import { penStijl } from '../elements/tekening';
 import { FORMATEN } from '../document/formats';
 import { renderElement, type RenderCtx } from '../elements/index';
 import { renderAchtergrond } from '../elements/achtergrond';
@@ -9,6 +11,8 @@ import { alleenTransform } from './vergelijk';
 import { pinchDelta, type Punt } from './pinch';
 
 export interface ControllerOpties { onVakTik?(id: string): void }
+
+export type Gereedschap = 'selecteer' | 'teken' | 'gum';
 
 interface NodeInfo { el: Element; group: Konva.Group }
 
@@ -24,6 +28,10 @@ export class CanvasController {
   private formaat?: Formaat;
   private stopSync: () => void;
   private resizeObs: ResizeObserver;
+  private gereedschap: Gereedschap = 'selecteer';
+  private pen: { gereedschap: TekenGereedschap; kleur: string; dikte: number } = { gereedschap: 'pen', kleur: '#2D2A32', dikte: 14 };
+  private streek: { lijn: Konva.Line; punten: number[]; pointerId: number } | null = null;
+  private gumPointer: number | null = null;
   private knijp: { id: string; p1: Punt; p2: Punt; x: number; y: number; sx: number; sy: number; rot: number } | null = null;
 
   constructor(private container: HTMLDivElement, protected editor: Editor, protected assets: RenderCtx, protected opties: ControllerOpties = {}) {
@@ -70,6 +78,22 @@ export class CanvasController {
     return { x: r.left + this.stage.x() + x * this.stage.scaleX(), y: r.top + this.stage.y() + y * this.stage.scaleY() };
   }
 
+  setGereedschap(g: Gereedschap, pen?: Partial<{ gereedschap: TekenGereedschap; kleur: string; dikte: number }>): void {
+    this.gereedschap = g;
+    if (pen) this.pen = { ...this.pen, ...pen };
+    const tekenen = g !== 'selecteer';
+    this.content.listening(g !== 'teken');
+    for (const n of this.nodes.values()) n.group.draggable(!tekenen && !n.el.vergrendeld);
+    if (tekenen && this.editor.get().selectedId) this.editor.select(null);
+  }
+
+  private gum(): void {
+    const pos = this.stage.getPointerPosition();
+    const shape = pos ? this.stage.getIntersection(pos) : null;
+    const n = shape ? this.elementVan(shape) : undefined;
+    if (n?.el.type === 'tekening') this.editor.remove(n.el.id);
+  }
+
   group(id: string): Konva.Group | undefined { return this.nodes.get(id)?.group; }
 
   destroy(): void {
@@ -102,7 +126,7 @@ export class CanvasController {
         huidig.group.setAttrs({
           x: el.x, y: el.y, rotation: el.rotatie,
           scaleX: el.schaalX * (el.gespiegeld ? -1 : 1), scaleY: el.schaalY,
-          draggable: !el.vergrendeld,
+          draggable: this.gereedschap === 'selecteer' && !el.vergrendeld,
         });
         huidig.el = el;
         continue;
@@ -111,6 +135,7 @@ export class CanvasController {
       const group = renderElement(el, this.assets);
       this.content.add(group);
       this.nodes.set(el.id, { el, group });
+      if (this.gereedschap !== 'selecteer') group.draggable(false);
     }
     for (const [id, n] of this.nodes) {
       if (!gezien.has(id)) { n.group.destroy(); this.nodes.delete(id); }
@@ -149,11 +174,45 @@ export class CanvasController {
 
   protected bindEvents(): void {
     this.stage.on('click tap', (e) => {
+      if (this.gereedschap !== 'selecteer') return;
       if (e.target.getLayer() === this.ui) return;
       const n = this.elementVan(e.target);
       if (!n) { this.editor.select(null); return; }
       this.editor.select(n.el.id);
       if (n.el.type === 'foto' && !n.el.assetId) this.opties.onVakTik?.(n.el.id);
+    });
+    this.stage.on('pointerdown', (e) => {
+      if (this.gereedschap === 'selecteer') return;
+      const evt = e.evt as PointerEvent;
+      if (this.streek || this.gumPointer !== null) return;
+      if (this.gereedschap === 'gum') { this.gumPointer = evt.pointerId; this.gum(); return; }
+      const p = this.content.getRelativePointerPosition();
+      if (!p) return;
+      const lijn = new Konva.Line({ points: [p.x, p.y, p.x + 0.5, p.y + 0.5], stroke: this.pen.kleur, strokeWidth: this.pen.dikte, listening: false, ...penStijl(this.pen.gereedschap, this.pen.dikte) });
+      this.ui.add(lijn);
+      this.streek = { lijn, punten: [p.x, p.y], pointerId: evt.pointerId };
+    });
+    this.stage.on('pointermove', (e) => {
+      const evt = e.evt as PointerEvent;
+      if (this.gumPointer === evt.pointerId) { this.gum(); return; }
+      if (!this.streek || this.streek.pointerId !== evt.pointerId) return;
+      const p = this.content.getRelativePointerPosition();
+      if (!p) return;
+      const pts = this.streek.punten;
+      if (Math.hypot(p.x - pts[pts.length - 2], p.y - pts[pts.length - 1]) < 2) return;
+      pts.push(p.x, p.y);
+      this.streek.lijn.points(pts.length === 2 ? [...pts, pts[0] + 0.5, pts[1] + 0.5] : pts);
+      this.ui.batchDraw();
+    });
+    this.stage.on('pointerup pointercancel', (e) => {
+      const evt = e.evt as PointerEvent;
+      if (this.gumPointer === evt.pointerId) { this.gumPointer = null; return; }
+      if (!this.streek || this.streek.pointerId !== evt.pointerId) return;
+      const { lijn, punten } = this.streek;
+      this.streek = null;
+      lijn.destroy();
+      this.editor.add(maakTekening(punten, this.pen.gereedschap, this.pen.kleur, this.pen.dikte));
+      this.editor.select(null);
     });
     this.stage.on('contextmenu', (e) => {
       e.evt.preventDefault();

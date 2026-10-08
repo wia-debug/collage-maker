@@ -208,4 +208,17 @@ describe('CanvasController', () => {
       expect(editor.get().collage).toBe(voor);
     });
   });
+
+  it('tekenmodus: elementen niet versleepbaar en selectie gewist', () => {
+    const { editor, ctrl } = opzet();
+    const v = maakVorm({ x: 100, y: 100, vorm: 'rechthoek', breedte: 50, hoogte: 50 });
+    editor.add(v);
+    ctrl.setGereedschap('teken');
+    expect(editor.get().selectedId).toBeNull();
+    expect(ctrl.group(v.id)!.draggable()).toBe(false);
+    editor.update(v.id, { x: 200 });
+    expect(ctrl.group(v.id)!.draggable()).toBe(false);
+    ctrl.setGereedschap('selecteer');
+    expect(ctrl.group(v.id)!.draggable()).toBe(true);
+  });
 });

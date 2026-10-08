@@ -17,6 +17,7 @@
   import FotoPaneel from './FotoPaneel.svelte';
   import TekstPaneel from './TekstPaneel.svelte';
   import TekstInvoer from './TekstInvoer.svelte';
+  import TekenPaneel from './TekenPaneel.svelte';
   import { tekstKlaar } from '../editor/tekst-acties';
   import { laadLettertypes } from '../assets/fonts';
   import { voegFotoToe } from '../editor/foto-acties';
@@ -34,14 +35,19 @@
   let vraagTerug = $state(false);
 
   const geselecteerd = $derived($editorState.collage.elementen.find((e) => e.id === $editorState.selectedId) ?? null);
-  const PANEEL_VOOR: Record<Element['type'], Paneel> = { foto: 'foto', tekst: 'tekst', sticker: 'stickers', vorm: 'vormen', tekening: 'tekenen' };
+  const PANEEL_VOOR: Record<Element['type'], Paneel | null> = { foto: 'foto', tekst: 'tekst', sticker: 'stickers', vorm: 'vormen', tekening: null };
 
   $effect(() => {
     const id = $editorState.selectedId;
     untrack(() => {
       const el = editor.get().collage.elementen.find((e) => e.id === id);
-      if (el) paneel = PANEEL_VOOR[el.type];
+      const p = el ? PANEEL_VOOR[el.type] : null;
+      if (p) paneel = p;
     });
+  });
+
+  $effect(() => {
+    if (paneel !== 'tekenen') untrack(() => controller)?.setGereedschap('selecteer');
   });
 
   onMount(async () => {
@@ -153,6 +159,7 @@
       {#if paneel === 'stickers'}<StickerPaneel {editor} {assets} el={geselecteerd} {startPakket} />{/if}
       {#if paneel === 'foto'}<FotoPaneel {editor} {assets} el={geselecteerd} onKiesFoto={kiesFoto} onBijsnijden={openBijsnijden} />{/if}
       {#if paneel === 'tekst'}<TekstPaneel {editor} el={geselecteerd} onNieuw={() => tekstInvoer.openen('', null)} onWijzig={wijzigTekst} />{/if}
+      {#if paneel === 'tekenen'}<TekenPaneel {controller} />{/if}
       <!-- panelen -->
     </aside>
   {/if}

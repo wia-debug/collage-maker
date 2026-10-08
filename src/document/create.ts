@@ -1,4 +1,4 @@
-import { SCHEMA_VERSIE, type Basis, type Collage, type Formaat, type FotoElement, type StickerElement, type TekstElement, type VormElement } from './types';
+import { SCHEMA_VERSIE, type Basis, type Collage, type Formaat, type FotoElement, type StickerElement, type TekenGereedschap, type TekeningElement, type TekstElement, type VormElement } from './types';
 
 export const nieuwId = (): string => crypto.randomUUID();
 
@@ -33,4 +33,18 @@ export function maakVorm(p: { x: number; y: number; vorm: VormElement['vorm']; b
   const kleur = p.vulling === undefined ? '#FF6B6B' : p.vulling;
   const lijn = p.vorm === 'lijn';
   return { ...basis(p.x, p.y, p.breedte, p.hoogte), type: 'vorm', vorm: p.vorm, vulling: lijn ? null : kleur, rand: lijn ? (kleur ?? '#2D2A32') : null, randDikte: lijn ? 12 : 8, doorzichtigheid: 1 };
+}
+
+export function normaliseerStreek(punten: number[], dikte: number): { x: number; y: number; breedte: number; hoogte: number; punten: number[] } {
+  const p = punten.length === 2 ? [punten[0], punten[1], punten[0] + 0.5, punten[1] + 0.5] : punten;
+  const xs = p.filter((_, i) => i % 2 === 0), ys = p.filter((_, i) => i % 2 === 1);
+  const half = dikte / 2;
+  const minX = Math.min(...xs) - half, minY = Math.min(...ys) - half;
+  const breedte = Math.max(...xs) + half - minX, hoogte = Math.max(...ys) + half - minY;
+  return { x: minX + breedte / 2, y: minY + hoogte / 2, breedte, hoogte, punten: p.map((v, i) => v - (i % 2 === 0 ? minX : minY)) };
+}
+
+export function maakTekening(punten: number[], gereedschap: TekenGereedschap, kleur: string, dikte: number): TekeningElement {
+  const n = normaliseerStreek(punten, dikte);
+  return { ...basis(n.x, n.y, n.breedte, n.hoogte), type: 'tekening', gereedschap, punten: n.punten, kleur, dikte };
 }

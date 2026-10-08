@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import Konva from 'konva';
 import { renderElement } from './index';
-import { maakFoto, maakSticker, maakTekst, maakVorm } from '../document/create';
+import { maakFoto, maakSticker, maakTekening, maakTekst, maakVorm } from '../document/create';
 import { stickerKey } from '../assets/store';
 import { renderFoto } from './foto';
 import { renderTekst } from './tekst';
@@ -124,5 +124,14 @@ describe('renderWordArt', () => {
   it('3d tekent extra lagen onder elke letter', () => {
     const t = { ...maakTekst({ x: 0, y: 0, tekst: 'AB' }), wordart: wordartPreset('3d') };
     expect(renderTekst(t, leeg).find('Text').length).toBeGreaterThan(2 * 5);
+  });
+});
+
+describe('renderTekening', () => {
+  it('tekent een lijn met brede raakzone', () => {
+    const t = maakTekening([0, 0, 100, 50], 'pen', '#000000', 6);
+    const line = renderElement(t, leeg).findOne('Line') as Konva.Line;
+    expect(line.points()).toEqual(t.punten);
+    expect(line.hitStrokeWidth()).toBeGreaterThanOrEqual(30);
   });
 });
