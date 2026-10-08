@@ -11,6 +11,8 @@
   import GereedschapBalk from './GereedschapBalk.svelte';
   import ContextBalk from './ContextBalk.svelte';
   import Dialoog from './Dialoog.svelte';
+  import VormPaneel from './VormPaneel.svelte';
+  import StickerPaneel from './StickerPaneel.svelte';
 
   let { collage, opdracht = null, startPakket = null, onTerug }: { collage: Collage; opdracht?: string | null; startPakket?: string | null; onTerug: () => void } = $props();
 
@@ -78,6 +80,8 @@
   </div>
   {#if paneel}
     <aside class="vak-paneel" id="paneel-{paneel}">
+      {#if paneel === 'vormen'}<VormPaneel {editor} el={geselecteerd} />{/if}
+      {#if paneel === 'stickers'}<StickerPaneel {editor} {assets} el={geselecteerd} {startPakket} />{/if}
       <!-- panelen -->
     </aside>
   {/if}
