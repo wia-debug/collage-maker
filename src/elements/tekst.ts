@@ -2,8 +2,10 @@ import Konva from 'konva';
 import type { TekstElement } from '../document/types';
 import { familie, fontStijl } from '../assets/fonts';
 import { baseGroup, type RenderCtx } from './base';
+import { renderWordArt } from './wordart';
 
 export function renderTekst(el: TekstElement, _ctx: RenderCtx): Konva.Group {
+  if (el.wordart) return renderWordArt(el);
   const t = new Konva.Text({
     text: el.tekst,
     fontFamily: familie(el.lettertype),

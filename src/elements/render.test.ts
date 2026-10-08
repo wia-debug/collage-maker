@@ -5,6 +5,7 @@ import { maakFoto, maakSticker, maakTekst, maakVorm } from '../document/create';
 import { stickerKey } from '../assets/store';
 import { renderFoto } from './foto';
 import { renderTekst } from './tekst';
+import { wordartPreset } from '../assets/wordart-presets';
 
 const leeg = { image: () => undefined };
 
@@ -109,5 +110,19 @@ describe('renderTekst', () => {
     const t = { ...maakTekst({ x: 0, y: 0, tekst: 'A' }), vet: true, schuin: true };
     const text = renderTekst(t, leeg).findOne('Text') as Konva.Text;
     expect(text.fontStyle()).toBe('italic bold');
+  });
+});
+
+describe('renderWordArt', () => {
+  it('tekent één Text per letter (spaties overgeslagen) plus een raakvlak', () => {
+    const t = { ...maakTekst({ x: 0, y: 0, tekst: 'Hoi jij' }), wordart: wordartPreset('regenboog') };
+    const g = renderTekst(t, leeg);
+    expect(g.find('Text')).toHaveLength(6);
+    expect(g.findOne('.raakvlak')).toBeDefined();
+  });
+
+  it('3d tekent extra lagen onder elke letter', () => {
+    const t = { ...maakTekst({ x: 0, y: 0, tekst: 'AB' }), wordart: wordartPreset('3d') };
+    expect(renderTekst(t, leeg).find('Text').length).toBeGreaterThan(2 * 5);
   });
 });

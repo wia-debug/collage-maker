@@ -7,6 +7,9 @@
   import type { Element, TekstElement } from '../document/types';
   import type { Editor } from '../editor/store';
   import { tekstStijlPatch } from '../editor/tekst-acties';
+  import { WORDART_PRESETS, wordartPreset } from '../assets/wordart-presets';
+  import { wordartVoorbeeld } from '../elements/wordart';
+  import type { WordArt, WordArtVorm } from '../document/types';
 
   let { editor, el, onNieuw, onWijzig }: { editor: Editor; el: Element | null; onNieuw: () => void; onWijzig: (id: string) => void } = $props();
   const tekst = $derived(el?.type === 'tekst' ? el : null);
@@ -14,6 +17,14 @@
   function zet(patch: Partial<TekstElement>) {
     if (!tekst) return;
     editor.update(tekst.id, tekstStijlPatch(tekst, patch, FORMATEN[editor.get().collage.formaat].breedte));
+  }
+
+  const VORMEN: { vorm: WordArtVorm; naam: string }[] = [
+    { vorm: 'recht', naam: 'Recht' }, { vorm: 'boog-omhoog', naam: 'Boog' }, { vorm: 'boog-omlaag', naam: 'Lach' },
+    { vorm: 'cirkel', naam: 'Rond' }, { vorm: 'golf', naam: 'Golf' },
+  ];
+  function zetWordArt(patch: Partial<WordArt>) {
+    if (tekst?.wordart) zet({ wordart: { ...tekst.wordart, ...patch } });
   }
 </script>
 
@@ -44,7 +55,29 @@
   <button id="tekst-schaduw" class="breed" aria-pressed={tekst.schaduw} class:actief={tekst.schaduw} onclick={() => zet({ schaduw: !tekst.schaduw })}>Schaduw</button>
   <h3>Ballon</h3>
   <KleurPalet waarde={tekst.ballon} metGeen onKies={(k) => zet({ ballon: k })} />
-  <!-- wordart-opties -->
+  <h3>WordArt</h3>
+  <div class="wordart">
+    <button id="wordart-geen" class:actief={!tekst.wordart} onclick={() => zet({ wordart: null })}>Geen</button>
+    {#each WORDART_PRESETS as p}
+      <button id="wordart-{p.id}" aria-label={p.naam} onclick={() => zet({ wordart: wordartPreset(p.id) })}>
+        <img src={wordartVoorbeeld(p.id)} alt="" />
+      </button>
+    {/each}
+  </div>
+  {#if tekst.wordart}
+    <h3>Vorm</h3>
+    <div class="rij">
+      {#each VORMEN as v}
+        <button id="wordart-vorm-{v.vorm}" class:actief={tekst.wordart.vorm === v.vorm} onclick={() => zetWordArt({ vorm: v.vorm })}>{v.naam}</button>
+      {/each}
+    </div>
+    <h3>Letterkleur</h3>
+    <KleurPalet waarde={tekst.wordart.vulling.kleuren[0] ?? null} onKies={(k) => k && zetWordArt({ vulling: { soort: tekst.wordart!.vulling.soort === 'regenboog' ? 'kleur' : tekst.wordart!.vulling.soort, kleuren: [k, ...tekst.wordart!.vulling.kleuren.slice(1)] } })} />
+    {#if tekst.wordart.vulling.soort === 'verloop'}
+      <h3>Tweede kleur</h3>
+      <KleurPalet waarde={tekst.wordart.vulling.kleuren[1] ?? null} onKies={(k) => k && zetWordArt({ vulling: { soort: 'verloop', kleuren: [tekst.wordart!.vulling.kleuren[0], k] } })} />
+    {/if}
+  {/if}
 {/if}
 
 <style>
@@ -53,4 +86,7 @@
   .fonts button, .rij button, #tekst-schaduw { background: var(--creme); font-size: 1.1rem; }
   .rij { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
   .actief { background: var(--zon) !important; }
+  .wordart { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .wordart button { background: var(--creme); padding: 4px; min-height: 64px; }
+  .wordart img { width: 100%; height: auto; }
 </style>

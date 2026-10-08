@@ -20,3 +20,18 @@ test('tekst toevoegen, opmaken en leegmaken', async ({ page }) => {
   await page.click('#tekst-klaar');
   expect(await elementen(page)).toHaveLength(0);
 });
+
+test('WordArt kiezen en vorm wijzigen', async ({ page }) => {
+  await openNieuweCollage(page);
+  await page.click('#tool-tekst');
+  await page.click('#tekst-nieuw');
+  await page.fill('#tekst-veld', 'Super');
+  await page.click('#tekst-klaar');
+  await page.click('#wordart-regenboog');
+  await page.click('#wordart-vorm-boog-omhoog');
+  const [t] = await elementen(page);
+  expect(t.wordart.vulling.soort).toBe('regenboog');
+  expect(t.wordart.vorm).toBe('boog-omhoog');
+  await page.click('#wordart-geen');
+  expect((await elementen(page))[0].wordart).toBeNull();
+});
