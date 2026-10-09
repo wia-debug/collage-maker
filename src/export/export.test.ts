@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { bestandsnaam, dataUrlNaarBlob } from './bewaar';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { bestandsnaam, bewaarBestand, dataUrlNaarBlob } from './bewaar';
 import { maakPdf } from './pdf';
 
 describe('bestandsnaam', () => {
@@ -25,5 +25,30 @@ describe('dataUrlNaarBlob', () => {
   it('zet een data-URL om', async () => {
     const c = document.createElement('canvas');
     expect((await dataUrlNaarBlob(c.toDataURL('image/png'))).type).toBe('image/png');
+  });
+});
+
+describe('bewaarBestand', () => {
+  afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+
+  async function metShareFout(naam: string) {
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    vi.stubGlobal('navigator', { canShare: () => true, share: () => Promise.reject(new DOMException('x', naam)) });
+    const klik = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    const r = await bewaarBestand(new Blob(['x'], { type: 'image/png' }), 'a.png');
+    return { r, klik };
+  }
+
+  it('InvalidStateError (dubbele tik) geeft geannuleerd zonder download', async () => {
+    const { r, klik } = await metShareFout('InvalidStateError');
+    expect(r).toBe('geannuleerd');
+    expect(klik).not.toHaveBeenCalled();
+  });
+
+  it('AbortError geeft geannuleerd, andere fouten vallen terug op download', async () => {
+    expect((await metShareFout('AbortError')).r).toBe('geannuleerd');
+    const { r, klik } = await metShareFout('NotAllowedError');
+    expect(r).toBe('gedownload');
+    expect(klik).toHaveBeenCalled();
   });
 });

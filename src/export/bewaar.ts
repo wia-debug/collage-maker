@@ -16,7 +16,8 @@ export async function bewaarBestand(blob: Blob, naam: string): Promise<'gedeeld'
       await navigator.share({ files: [file] });
       return 'gedeeld';
     } catch (e) {
-      if ((e as DOMException).name === 'AbortError') return 'geannuleerd';
+      const naam = (e as DOMException).name;
+      if (naam === 'AbortError' || naam === 'InvalidStateError') return 'geannuleerd';
     }
   }
   const url = URL.createObjectURL(blob);

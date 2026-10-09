@@ -9,6 +9,7 @@
   let { controller, collage, onSluit }: { controller: CanvasController; collage: Collage; onSluit: () => void } = $props();
   let klaar = $state.raw<{ blob: Blob; naam: string; voorbeeld: string } | null>(null);
   let bezig = $state(false);
+  let bewaarBezig = $state(false);
 
   async function maak(soort: 'png' | 'pdf') {
     bezig = true;
@@ -25,9 +26,16 @@
 
   // Tweede tik: delen moet direct vanuit een tik gebeuren (iPad).
   async function bewaar() {
-    if (!klaar) return;
-    const r = await bewaarBestand(klaar.blob, klaar.naam);
-    if (r !== 'geannuleerd') { toon('Bewaard!', 'check-circle'); onSluit(); }
+    if (!klaar || bewaarBezig) return;
+    bewaarBezig = true;
+    try {
+      const r = await bewaarBestand(klaar.blob, klaar.naam);
+      if (r !== 'geannuleerd') { toon('Bewaard!', 'check-circle'); onSluit(); }
+    } catch {
+      toon('Bewaren lukte niet. Probeer het nog eens.', 'warning');
+    } finally {
+      bewaarBezig = false;
+    }
   }
 </script>
 
@@ -42,7 +50,7 @@
       {#if bezig}<p>Even geduld...</p>{/if}
     {:else}
       <img src={klaar.voorbeeld} alt="Voorbeeld van je collage" />
-      <button id="export-bewaar" class="hoofd breed" onclick={bewaar}><Icon name="download-simple" /> Bewaar op dit toestel</button>
+      <button id="export-bewaar" class="hoofd breed" disabled={bewaarBezig} onclick={bewaar}><Icon name="download-simple" /> Bewaar op dit toestel</button>
     {/if}
     <button id="export-sluit" class="breed" onclick={onSluit}>Sluiten</button>
   </div>
