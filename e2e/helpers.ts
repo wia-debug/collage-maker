@@ -1,6 +1,15 @@
 import { test as base, expect, type Page } from '@playwright/test';
 
-export const test = base;
+const ALLE_TOURS = ['editor', 'foto', 'tekst', 'stickers', 'vormen', 'tekenen', 'achtergrond'];
+
+export const test = base.extend({
+  page: async ({ page }, use) => {
+    await page.addInitScript((tours) => {
+      try { localStorage.setItem('collage-tours-gezien', JSON.stringify(tours)); } catch { /* opslag geblokkeerd */ }
+    }, ALLE_TOURS);
+    await use(page);
+  },
+});
 export { expect };
 
 declare global {

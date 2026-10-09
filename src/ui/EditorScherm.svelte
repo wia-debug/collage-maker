@@ -26,6 +26,7 @@
   import { voegFotoToe } from '../editor/foto-acties';
   import { afbeeldingenUit, FOUTTEKST, ImportFout } from '../import/afbeelding';
   import { toon } from './toast';
+  import { startTour, tourGezien } from '../tour/tour';
 
   let { collage, opdracht = null, startPakket = null, onTerug }: { collage: Collage; opdracht?: string | null; startPakket?: string | null; onTerug: () => void } = $props();
 
@@ -59,6 +60,7 @@
     await Promise.all([assets.preload(editor.get().collage), laadLettertypes()]);
     controller = new CanvasController(canvasEl, editor, assets, { onVakTik: (id) => kiesFoto(id) });
     if (import.meta.env.MODE === 'e2e') (window as any).__collage = { editor, assets, controller, maakVorm };
+    if (!tourGezien('editor')) setTimeout(() => startTour('editor'), 300);
   });
   onDestroy(() => controller?.destroy());
 
@@ -152,6 +154,7 @@
       onTerug={() => (vraagTerug = true)}
       onOngedaan={() => editor.undo()}
       onOpnieuw={() => editor.redo()}
+      onHelp={() => startTour(paneel ?? 'editor')}
       onBewaar={() => { editor.select(null); toonExport = true; }}
     />
   </div>
