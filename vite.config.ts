@@ -2,6 +2,7 @@ import { defineConfig } from 'vitest/config';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { playwright } from '@vitest/browser-playwright';
 import { VitePWA } from 'vite-plugin-pwa';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 
 const pwa = VitePWA({
   registerType: 'prompt',
@@ -33,8 +34,8 @@ const pwaStub = {
   load: (id: string) => (id === '\0pwa-register-stub' ? 'export const registerSW = () => () => {};' : undefined),
 };
 
-export default defineConfig({
-  plugins: [svelte(), ...(process.env.VITEST ? [pwaStub] : [pwa])],
+export default defineConfig(({ mode }) => ({
+  plugins: [svelte(), ...(process.env.VITEST ? [pwaStub] : [pwa]), ...(mode === 'lan' ? [basicSsl()] : [])],
   test: {
     include: ['src/**/*.test.ts'],
     browser: {
@@ -44,4 +45,4 @@ export default defineConfig({
       instances: [{ browser: 'chromium' }],
     },
   },
-});
+}));
