@@ -10,9 +10,9 @@
   import type { Profiel } from '../storage/profielen';
   import MijnCollages from './MijnCollages.svelte';
   import type { CollageSamenvatting } from '../storage/collages';
-  let { onStart, profiel = null, onWissel, collages = [], onOpen, onWis, onOpenBestand }: {
+  let { onStart, profiel = null, onWissel, collages = [], onOpen, onWis, onOpenBestand, onLeerkracht }: {
     onStart: (c: Collage, opdracht?: string, pakket?: string) => void; profiel?: Profiel | null; onWissel?: () => void;
-    collages?: CollageSamenvatting[]; onOpen?: (id: string) => void; onWis?: (id: string) => void; onOpenBestand?: (f: File) => void;
+    collages?: CollageSamenvatting[]; onOpen?: (id: string) => void; onWis?: (id: string) => void; onOpenBestand?: (f: File) => void; onLeerkracht?: () => void;
   } = $props();
   let stap = $state<'menu' | 'formaat' | 'templates' | 'uitdagingen'>('menu');
   let bestandInput: HTMLInputElement;
@@ -20,6 +20,7 @@
 </script>
 
 <main class="start">
+  {#if onLeerkracht}<button id="knop-leerkracht" class="slot" aria-label="Leerkracht" onclick={onLeerkracht}><Icon name="lock" /></button>{/if}
   <h1>Collagemaker</h1>
   {#if profiel}
     <div class="profiel">
@@ -74,11 +75,12 @@
   .profiel { display: flex; align-items: center; gap: 10px; font-size: 1.2rem; }
   .profiel .avatar { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--kleur); color: #fff; }
   .profiel button { padding: 0 16px; }
-  .start { min-height: 100dvh; padding: max(24px, env(safe-area-inset-top)) 24px 24px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .start { position: relative; min-height: 100dvh; padding: max(24px, env(safe-area-inset-top)) 24px 24px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 16px; }
   h1 { font-size: clamp(2rem, 6vw, 3.5rem); color: var(--koraal); margin-top: 16px; }
   .kaarten { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; width: min(960px, 100%); }
   .kaart { flex-direction: column; min-height: 200px; padding: 20px; border-radius: 28px; font-size: 1.4rem; background: var(--paneel); box-shadow: var(--schaduw); color: var(--kleur, var(--inkt)); }
   .formaat { color: var(--inkt); }
   .blad { display: block; height: 110px; max-width: 150px; background: var(--creme); border: 4px solid var(--hemel); border-radius: 10px; }
   .terug { align-self: flex-start; padding: 0 18px; }
+  .slot { position: absolute; top: max(12px, env(safe-area-inset-top)); right: 12px; background: transparent; }
 </style>

@@ -4,6 +4,7 @@
   import EditorScherm from './ui/EditorScherm.svelte';
   import EersteStart from './ui/EersteStart.svelte';
   import Toast from './ui/Toast.svelte';
+  import LeerkrachtMenu from './ui/LeerkrachtMenu.svelte';
   import type { Collage } from './document/types';
   import { db } from './storage/db';
   import { opstart } from './storage/opstart';
@@ -63,6 +64,14 @@
   let profiel = $state.raw<Profiel | null>(null);
   let profielen = $state.raw<Profiel[]>([]);
   let nieuwProfiel = $state(false);
+  let toonLeerkracht = $state(false);
+
+  function nieuweInstellingen(i: Instellingen) {
+    inst = i;
+    if (!profielenActief(i) && profiel) { profiel = null; zetTourProfiel(null); }
+    void laadProfielen();
+    void herlaadLijst();
+  }
 
   async function laadProfielen() { profielen = await lijstProfielen(db); }
   function kiesProfiel(p: Profiel) { profiel = p; nieuwProfiel = false; zetTourProfiel(p.id); void herlaadLijst(); }
@@ -87,12 +96,15 @@
   {#if nieuwProfiel}
     <NieuwProfiel onKlaar={kiesProfiel} onAnnuleer={() => (nieuwProfiel = false)} />
   {:else}
-    <ProfielKiezer {profielen} onGekozen={kiesProfiel} onNieuw={() => (nieuwProfiel = true)} />
+    <ProfielKiezer {profielen} onGekozen={kiesProfiel} onNieuw={() => (nieuwProfiel = true)} onLeerkracht={() => (toonLeerkracht = true)} />
   {/if}
 {:else if collage}
   <EditorScherm {collage} {opdracht} startPakket={pakket} toestel={inst.toestel} vooraf={editorAssets} onTerug={terug} />
 {:else}
-  <StartScherm onStart={start} {profiel} onWissel={profielenActief(inst) ? wissel : undefined} {collages} onOpen={open} onWis={wis} onOpenBestand={inst.toestel === 'ipad' ? undefined : openBestand} />
+  <StartScherm onStart={start} {profiel} onWissel={profielenActief(inst) ? wissel : undefined} {collages} onOpen={open} onWis={wis} onOpenBestand={inst.toestel === 'ipad' ? undefined : openBestand} onLeerkracht={() => (toonLeerkracht = true)} />
+{/if}
+{#if toonLeerkracht && inst}
+  <LeerkrachtMenu {inst} onInstellingen={nieuweInstellingen} onSluit={() => { toonLeerkracht = false; void laadProfielen(); }} />
 {/if}
 <Toast />
 

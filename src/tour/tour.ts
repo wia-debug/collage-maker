@@ -2,7 +2,7 @@ import { driver, type DriveStep } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import type { Paneel } from '../ui/types';
 
-export type TourId = 'editor' | Paneel;
+export type TourId = 'editor' | 'leerkracht' | Paneel;
 
 const stap = (element: string, title: string, description: string): DriveStep => ({ element, popover: { title, description } });
 
@@ -13,6 +13,10 @@ export const TOURS: Record<TourId, DriveStep[]> = {
     stap('#canvas-vlak', 'Je collage', 'Tik op iets om het te kiezen. Sleep om het te verplaatsen.'),
     stap('#knop-ongedaan', 'Oeps?', 'Foutje gemaakt? Tik hier en het is weer weg.'),
     stap('#knop-bewaar', 'Bewaren', 'Klaar? Bewaar je collage als foto of als PDF.'),
+  ],
+  leerkracht: [
+    stap('#toestel-ipad', 'Toestel', 'Kies hier hoe dit toestel gebruikt wordt. Dat bepaalt hoe collages bewaard worden.'),
+    stap('#alles-wissen', 'Alles wissen', 'Wis alle profielen en collages, bijvoorbeeld aan het einde van het schooljaar.'),
   ],
   foto: [
     stap('#foto-kiezen', 'Foto kiezen', 'Kies een foto van dit toestel.'),
