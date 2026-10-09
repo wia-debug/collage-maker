@@ -1,5 +1,6 @@
 import type { CollageDb } from './db';
 import { maakHash } from './hash';
+import { ruimAutomatischOp } from './opruimen';
 import { leesInstellingen, schrijfInstellingen, type Instellingen, type Toestel } from './instellingen';
 
 interface E2eInstellingen { toestel: Toestel; profielenAan?: boolean; mastercode?: string }
@@ -14,7 +15,12 @@ async function zaaiE2e(db: CollageDb): Promise<void> {
 
 export async function opstart(db: CollageDb): Promise<Instellingen> {
   if (import.meta.env.MODE === 'e2e') await zaaiE2e(db);
-  return leesInstellingen(db);
+  const inst = await leesInstellingen(db);
+  if (inst.toestel && inst.toestel !== 'chromebook') {
+    try { await navigator.storage?.persist?.(); } catch { /* niet ondersteund */ }
+    try { await ruimAutomatischOp(db); } catch { /* opruimen mag opstarten nooit blokkeren */ }
+  }
+  return inst;
 }
 
 export async function wisAlles(db: CollageDb): Promise<void> {

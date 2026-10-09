@@ -4,6 +4,8 @@
   import EditorScherm from './ui/EditorScherm.svelte';
   import EersteStart from './ui/EersteStart.svelte';
   import Toast from './ui/Toast.svelte';
+  import OpruimDialoog from './ui/OpruimDialoog.svelte';
+  import { teVragen } from './storage/opruimen';
   import LeerkrachtMenu from './ui/LeerkrachtMenu.svelte';
   import type { Collage } from './document/types';
   import { db } from './storage/db';
@@ -23,7 +25,28 @@
   let editorAssets = $state.raw<AssetStore | undefined>(undefined);
   let collages = $state.raw<CollageSamenvatting[]>([]);
 
-  async function herlaadLijst() { collages = await lijstCollages(db, profiel?.id ?? null); }
+  async function herlaadLijst() {
+    collages = await lijstCollages(db, profiel?.id ?? null);
+    void vraagOpruimen();
+  }
+
+  let teOpruimen = $state.raw<CollageSamenvatting[]>([]);
+  const gevraagd = new Set<string>();
+
+  async function vraagOpruimen() {
+    if (!inst || inst.toestel === 'chromebook') return;
+    const sleutel = profiel?.id ?? '';
+    if (gevraagd.has(sleutel)) return;
+    gevraagd.add(sleutel);
+    teOpruimen = await teVragen(db, profiel?.id ?? null);
+  }
+
+  async function opruimenJa() {
+    const ids = teOpruimen.map((c) => c.id);
+    teOpruimen = [];
+    await wisCollages(db, ids);
+    await herlaadLijst();
+  }
 
   async function open(id: string) {
     try {
@@ -88,6 +111,7 @@
     await laadProfielen();
     await herlaadLijst();
     inst = i;
+    void vraagOpruimen();
   });
 
   function start(c: Collage, o?: string, p?: string) { editorAssets = undefined; collage = { ...c, profielId: profiel?.id ?? null }; opdracht = o ?? null; pakket = p ?? null; }
@@ -111,6 +135,9 @@
 {/if}
 {#if toonLeerkracht && inst}
   <LeerkrachtMenu {inst} onInstellingen={nieuweInstellingen} onSluit={sluitLeerkracht} />
+{/if}
+{#if teOpruimen.length && !collage}
+  <OpruimDialoog collages={teOpruimen} onJa={() => void opruimenJa()} onLater={() => (teOpruimen = [])} />
 {/if}
 <Toast />
 
