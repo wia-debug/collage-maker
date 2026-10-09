@@ -90,4 +90,17 @@ describe('editor-store', () => {
     expect(ed.get().collage.formaat).toBe('poster');
     expect(ed.get().canUndo).toBe(false);
   });
+
+  it('removeMany is één undo-stap en doet niets zonder ids', () => {
+    const ed = createEditor(nieuweCollage('vierkant'));
+    const a = vorm(10), b = vorm(20), c = vorm(30);
+    ed.add(a); ed.add(b); ed.add(c);
+    const voor = ed.get().collage;
+    ed.removeMany([]);
+    expect(ed.get().collage).toBe(voor);
+    ed.removeMany([a.id, c.id]);
+    expect(ed.get().collage.elementen.map((e) => e.id)).toEqual([b.id]);
+    ed.undo();
+    expect(ed.get().collage.elementen.map((e) => e.id)).toEqual([a.id, b.id, c.id]);
+  });
 });

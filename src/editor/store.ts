@@ -40,6 +40,11 @@ export function createEditor(initial: Collage) {
       commit({ elementen: els().map((e) => (e.id === id ? ({ ...e, ...patch } as Element) : e)) });
     },
     remove(id: string): void { commit({ elementen: els().filter((e) => e.id !== id) }); },
+    removeMany(ids: string[]): void {
+      if (!ids.length) return;
+      const weg = new Set(ids);
+      commit({ elementen: els().filter((e) => !weg.has(e.id)) });
+    },
     duplicate(id: string): void {
       const e = els().find((x) => x.id === id);
       if (!e) return;
