@@ -15,6 +15,11 @@ describe('hash', () => {
     expect(await controleerCode('123456', h)).toBe(true);
     expect(await controleerCode('123457', h)).toBe(false);
   });
+  it('geeft false bij een beschadigde opgeslagen code', async () => {
+    const h = await maakHash('123456', 1000);
+    expect(await controleerCode('123456', { ...h, salt: '***' })).toBe(false);
+    expect(await controleerCode('123456', { ...h, iteraties: 0 })).toBe(false);
+  });
   it('gebruikt elke keer een andere salt', async () => {
     const a = await maakHash('x', 1000), b = await maakHash('x', 1000);
     expect(a.salt).not.toBe(b.salt);

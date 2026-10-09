@@ -16,5 +16,9 @@ export async function maakHash(geheim: string, iteraties = 100_000): Promise<Geh
 }
 
 export async function controleerCode(geheim: string, h: GehashteCode): Promise<boolean> {
-  return (await afleiden(geheim, uitB64(h.salt), h.iteraties)) === h.hash;
+  try {
+    return (await afleiden(geheim, uitB64(h.salt), h.iteraties)) === h.hash;
+  } catch {
+    return false; // beschadigde salt of hash
+  }
 }
