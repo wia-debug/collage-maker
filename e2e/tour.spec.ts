@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 test('rondleiding start de eerste keer en via de help-knop', async ({ page }) => {
+  // Bewust zonder tour-onderdrukking; wel de instellingen zaaien zodat de eerste-startschermen overgeslagen worden.
+  await page.addInitScript(() => { (window as any).__e2eInstellingen = { toestel: 'pc', profielenAan: false, mastercode: '123456' }; });
   await page.goto('/');
   await page.click('#start-nieuw');
   await page.click('#formaat-vierkant');

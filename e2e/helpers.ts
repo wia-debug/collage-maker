@@ -1,15 +1,25 @@
 import { test as base, expect, type Page } from '@playwright/test';
 
-const ALLE_TOURS = ['editor', 'foto', 'tekst', 'stickers', 'vormen', 'tekenen', 'achtergrond'];
+const ALLE_TOURS = ['editor', 'foto', 'tekst', 'stickers', 'vormen', 'tekenen', 'achtergrond', 'leerkracht'];
+
+export interface E2eInstellingen { toestel: 'ipad' | 'chromebook' | 'pc'; profielenAan?: boolean; mastercode?: string }
 
 export const test = base.extend({
   page: async ({ page }, use) => {
     await page.addInitScript((tours) => {
       try { localStorage.setItem('collage-tours-gezien', JSON.stringify(tours)); } catch { /* opslag geblokkeerd */ }
     }, ALLE_TOURS);
+    await page.addInitScript(() => {
+      (window as any).__e2eInstellingen = { toestel: 'pc', profielenAan: false, mastercode: '123456' };
+    });
     await use(page);
   },
 });
+
+// Init-scripts lopen in volgorde: deze overschrijft de standaard. Roep aan vóór de eerste page.goto.
+export async function metInstellingen(page: Page, cfg: E2eInstellingen): Promise<void> {
+  await page.addInitScript((c) => { (window as any).__e2eInstellingen = c; }, cfg);
+}
 export { expect };
 
 declare global {
