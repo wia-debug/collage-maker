@@ -1,12 +1,14 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import TemplateKiezer from './TemplateKiezer.svelte';
+  import UitdagingKiezer from './UitdagingKiezer.svelte';
+  import { template } from '../assets/templates';
   import { FORMATEN } from '../document/formats';
   import { nieuweCollage } from '../document/create';
   import type { Collage, Formaat } from '../document/types';
 
   let { onStart }: { onStart: (c: Collage, opdracht?: string, pakket?: string) => void } = $props();
-  let stap = $state<'menu' | 'formaat' | 'templates'>('menu');
+  let stap = $state<'menu' | 'formaat' | 'templates' | 'uitdagingen'>('menu');
   const formaten = Object.entries(FORMATEN) as [Formaat, (typeof FORMATEN)[Formaat]][];
 </script>
 
@@ -20,7 +22,9 @@
       <button id="start-template" class="kaart" style:--kleur="var(--hemel)" onclick={() => (stap = 'templates')}>
         <Icon name="puzzle-piece" size={64} /><span>Template</span>
       </button>
-      <!-- startkaarten -->
+      <button id="start-uitdaging" class="kaart" style:--kleur="var(--lavendel)" onclick={() => (stap = 'uitdagingen')}>
+        <Icon name="trophy" size={64} /><span>Uitdaging</span>
+      </button>
     </div>
   {:else if stap === 'formaat'}
     <button class="terug" onclick={() => (stap = 'menu')}><Icon name="arrow-left" /> Terug</button>
@@ -37,6 +41,10 @@
     <button class="terug" onclick={() => (stap = 'menu')}><Icon name="arrow-left" /> Terug</button>
     <h2>Kies een template</h2>
     <TemplateKiezer onKies={(t) => onStart(t.maak())} />
+  {:else if stap === 'uitdagingen'}
+    <button class="terug" onclick={() => (stap = 'menu')}><Icon name="arrow-left" /> Terug</button>
+    <h2>Kies een uitdaging</h2>
+    <UitdagingKiezer onKies={(u) => onStart(template(u.templateId).maak(), u.opdracht, u.pakket)} />
   {/if}
 </main>
 

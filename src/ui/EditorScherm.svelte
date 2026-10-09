@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount, untrack } from 'svelte';
   import type { Collage, Element, FotoElement, Uitsnede } from '../document/types';
+  import Icon from './Icon.svelte';
   import BijsnijDialoog from './BijsnijDialoog.svelte';
   import { maakVorm } from '../document/create';
   import { createEditor } from '../editor/store';
@@ -32,7 +33,8 @@
   const editorState = editor.state;
   let canvasEl: HTMLDivElement;
   let controller = $state.raw<CanvasController | null>(null);
-  let paneel = $state<Paneel | null>(null);
+  let paneel = $state<Paneel | null>(untrack(() => startPakket) ? 'stickers' : null);
+  let toonOpdracht = $state(true);
   let vraagTerug = $state(false);
 
   const geselecteerd = $derived($editorState.collage.elementen.find((e) => e.id === $editorState.selectedId) ?? null);
@@ -148,7 +150,13 @@
       onOpnieuw={() => editor.redo()}
     />
   </div>
-  <!-- opdrachtbalk -->
+  {#if opdracht && toonOpdracht}
+    <div class="vak-opdracht" id="opdracht">
+      <Icon name="trophy" size={28} />
+      <p>{opdracht}</p>
+      <button id="opdracht-sluit" aria-label="Opdracht verbergen" onclick={() => (toonOpdracht = false)}><Icon name="x" /></button>
+    </div>
+  {/if}
   <div class="vak-tools"><GereedschapBalk actief={paneel} onKies={(p) => (paneel = paneel === p ? null : p)} /></div>
   <div class="vak-canvas" id="canvas-vlak" role="application" aria-label="Collage">
     <div class="canvas" bind:this={canvasEl}></div>
@@ -194,6 +202,9 @@
     grid-template-areas: 'boven boven boven' 'opdracht opdracht opdracht' 'tools canvas paneel';
   }
   .vak-boven { grid-area: boven; z-index: 2; }
+  .vak-opdracht { grid-area: opdracht; display: flex; align-items: center; gap: 12px; padding: 6px 12px 6px 16px; background: var(--zon); font-weight: 700; }
+  .vak-opdracht p { flex: 1; margin: 0; font-size: 1.1rem; }
+  .vak-opdracht button { background: transparent; }
   .vak-tools { grid-area: tools; display: flex; }
   .vak-canvas { grid-area: canvas; position: relative; background: var(--werkvlak); overflow: hidden; touch-action: none; min-height: 0; min-width: 0; }
   .canvas { position: absolute; inset: 0; }
