@@ -1,4 +1,4 @@
-import { test, expect, openNieuweCollage, elementen, maakPng } from './helpers';
+import { test, expect, openNieuweCollage, elementen, maakPng, metInstellingen } from './helpers';
 
 const voegVormToe = (page: import('@playwright/test').Page) =>
   page.evaluate(() => {
@@ -8,6 +8,7 @@ const voegVormToe = (page: import('@playwright/test').Page) =>
 
 test('herladen vraagt bevestiging alleen na een wijziging', async ({ page }, info) => {
   test.skip(info.project.name !== 'chromebook', 'beforeunload testen we op Chromebook');
+  await metInstellingen(page, { toestel: 'chromebook' });
   await openNieuweCollage(page);
   const dialogen: string[] = [];
   page.on('dialog', (d) => { dialogen.push(d.type()); void d.accept(); });
@@ -22,6 +23,7 @@ test('herladen vraagt bevestiging alleen na een wijziging', async ({ page }, inf
 });
 
 test('Stoppen-dialoog blokkeert Delete', async ({ page }) => {
+  await metInstellingen(page, { toestel: 'chromebook' });
   await openNieuweCollage(page);
   await voegVormToe(page);
   await page.click('#knop-terug');

@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  let { onKlaar }: { onKlaar: (tekst: string, id: string | null) => void } = $props();
+  let { onKlaar, prefix = 'tekst', placeholder = 'Typ hier je tekst' }: { onKlaar: (tekst: string, id: string | null) => void; prefix?: string; placeholder?: string } = $props();
   let open = $state(false);
   let doelId: string | null = null;
   let veld: HTMLTextAreaElement;
@@ -18,10 +18,10 @@
 </script>
 
 <div class="tekst-invoer" class:open aria-hidden={!open}>
-  <textarea id="tekst-veld" bind:this={veld} rows="2" placeholder="Typ hier je tekst" enterkeyhint="done"
+  <textarea id="{prefix}-veld" bind:this={veld} rows="2" {placeholder} enterkeyhint="done"
     onkeydown={(e) => { if (e.key === 'Escape') annuleer(); }}></textarea>
-  <button id="tekst-annuleer" aria-label="Stop" onclick={annuleer}><Icon name="x" /></button>
-  <button id="tekst-klaar" class="hoofd" onclick={klaar}><Icon name="check" /> Klaar</button>
+  <button id="{prefix}-annuleer" aria-label="Stop" onclick={annuleer}><Icon name="x" /></button>
+  <button id="{prefix}-klaar" class="hoofd" onclick={klaar}><Icon name="check" /> Klaar</button>
 </div>
 
 <style>

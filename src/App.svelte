@@ -12,6 +12,31 @@
   import { profielenActief, type Instellingen } from './storage/instellingen';
   import { lijstProfielen, type Profiel } from './storage/profielen';
   import { zetTourProfiel } from './tour/tour';
+  import { AssetStore } from './assets/store';
+  import { laadCollage, lijstCollages, vulAssets, wisCollages, type CollageSamenvatting } from './storage/collages';
+  import { toon } from './ui/toast';
+
+  let editorAssets = $state.raw<AssetStore | undefined>(undefined);
+  let collages = $state.raw<CollageSamenvatting[]>([]);
+
+  async function herlaadLijst() { collages = await lijstCollages(db, profiel?.id ?? null); }
+
+  async function open(id: string) {
+    try {
+      const r = await laadCollage(db, id);
+      if (!r) return;
+      const a = new AssetStore();
+      await vulAssets(a, r.blobs);
+      editorAssets = a;
+      opdracht = null;
+      pakket = null;
+      collage = r.collage;
+    } catch {
+      toon('Deze collage kan ik niet openen.', 'warning');
+    }
+  }
+
+  async function wis(id: string) { await wisCollages(db, [id]); await herlaadLijst(); }
 
   let inst = $state.raw<Instellingen | null>(null);
   let collage = $state.raw<Collage | null>(null);
@@ -23,13 +48,18 @@
   let nieuwProfiel = $state(false);
 
   async function laadProfielen() { profielen = await lijstProfielen(db); }
-  function kiesProfiel(p: Profiel) { profiel = p; nieuwProfiel = false; zetTourProfiel(p.id); }
-  function wissel() { profiel = null; zetTourProfiel(null); void laadProfielen(); }
+  function kiesProfiel(p: Profiel) { profiel = p; nieuwProfiel = false; zetTourProfiel(p.id); void herlaadLijst(); }
+  function wissel() { profiel = null; collages = []; zetTourProfiel(null); void laadProfielen(); }
 
-  onMount(async () => { inst = await opstart(db); await laadProfielen(); });
+  onMount(async () => {
+    const i = await opstart(db);
+    await laadProfielen();
+    await herlaadLijst();
+    inst = i;
+  });
 
-  function start(c: Collage, o?: string, p?: string) { collage = { ...c, profielId: profiel?.id ?? null }; opdracht = o ?? null; pakket = p ?? null; }
-  function terug() { collage = null; opdracht = null; pakket = null; }
+  function start(c: Collage, o?: string, p?: string) { editorAssets = undefined; collage = { ...c, profielId: profiel?.id ?? null }; opdracht = o ?? null; pakket = p ?? null; }
+  function terug() { collage = null; opdracht = null; pakket = null; editorAssets = undefined; void herlaadLijst(); }
 </script>
 
 {#if !inst}
@@ -43,9 +73,9 @@
     <ProfielKiezer {profielen} onGekozen={kiesProfiel} onNieuw={() => (nieuwProfiel = true)} />
   {/if}
 {:else if collage}
-  <EditorScherm {collage} {opdracht} startPakket={pakket} onTerug={terug} />
+  <EditorScherm {collage} {opdracht} startPakket={pakket} toestel={inst.toestel} vooraf={editorAssets} onTerug={terug} />
 {:else}
-  <StartScherm onStart={start} {profiel} onWissel={profielenActief(inst) ? wissel : undefined} />
+  <StartScherm onStart={start} {profiel} onWissel={profielenActief(inst) ? wissel : undefined} {collages} onOpen={open} onWis={wis} />
 {/if}
 <Toast />
 

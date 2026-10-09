@@ -28,12 +28,45 @@
   import { afbeeldingenUit, FOUTTEKST, ImportFout } from '../import/afbeelding';
   import { toon } from './toast';
   import { startTour, tourGezien } from '../tour/tour';
+  import { db } from '../storage/db';
+  import { bewaarCollage } from '../storage/collages';
+  import { isVolFout, startAutosave } from '../storage/autosave';
+  import { maakVoorbeeld } from '../export/voorbeeld';
+  import type { Toestel } from '../storage/instellingen';
 
-  let { collage, opdracht = null, startPakket = null, onTerug }: { collage: Collage; opdracht?: string | null; startPakket?: string | null; onTerug: () => void } = $props();
+  let { collage, opdracht = null, startPakket = null, toestel, vooraf, onTerug }: { collage: Collage; opdracht?: string | null; startPakket?: string | null; toestel: Toestel; vooraf?: AssetStore; onTerug: () => void } = $props();
 
   const editor = createEditor(untrack(() => collage));
-  const assets = new AssetStore();
+  const assets = untrack(() => vooraf) ?? new AssetStore();
   const editorState = editor.state;
+  let laatsteBestand: Collage = untrack(() => collage);
+  let foutGemeld = false;
+  const autosave = startAutosave({
+    state: editor.state,
+    bewaar: (c) => bewaarCollage(db, c, assets),
+    onFout: (e) => {
+      if (foutGemeld) return;
+      foutGemeld = true;
+      toon(isVolFout(e) ? 'Je toestel is vol. Wis een paar oude collages.' : 'Bewaren lukte niet. Bewaar je collage als foto.', 'warning');
+    },
+  });
+  const gewijzigdSindsBestand = () => editor.get().collage !== laatsteBestand;
+
+  async function afsluiten() {
+    await autosave.flush();
+    if (autosave.heeftBewaard()) {
+      try {
+        const c = editor.get().collage;
+        await bewaarCollage(db, c, assets, await maakVoorbeeld(c, assets, 320));
+      } catch { /* een voorbeeld is niet nodig om verder te kunnen */ }
+    }
+    onTerug();
+  }
+
+  function terug() {
+    if (toestel === 'chromebook' && gewijzigdSindsBestand()) { vraagTerug = true; return; }
+    void afsluiten();
+  }
   let canvasEl: HTMLDivElement;
   let controller = $state.raw<CanvasController | null>(null);
   let paneel = $state<Paneel | null>(untrack(() => startPakket) ? 'stickers' : null);
@@ -65,15 +98,29 @@
     if (!tourGezien('editor')) setTimeout(() => startTour('editor'), 300);
   });
   function voorUitladen(e: BeforeUnloadEvent) {
-    if (!editor.get().canUndo) return;
+    if (toestel !== 'chromebook' || !gewijzigdSindsBestand()) return;
     e.preventDefault();
     e.returnValue = '';
   }
+  function opVerbergen() { if (document.visibilityState === 'hidden') void autosave.flush(); }
+  function opPagehide() { void autosave.flush(); }
   onMount(() => {
     window.addEventListener('beforeunload', voorUitladen);
-    return () => window.removeEventListener('beforeunload', voorUitladen);
+    document.addEventListener('visibilitychange', opVerbergen);
+    window.addEventListener('pagehide', opPagehide);
+    return () => {
+      window.removeEventListener('beforeunload', voorUitladen);
+      document.removeEventListener('visibilitychange', opVerbergen);
+      window.removeEventListener('pagehide', opPagehide);
+    };
   });
-  onDestroy(() => controller?.destroy());
+  onDestroy(() => { controller?.destroy(); void autosave.stop(); });
+
+  let naamInvoer: { openen(tekst: string, id: string | null): void };
+  function naamKlaar(t: string) {
+    const n = t.trim().slice(0, 40);
+    if (n && n !== editor.get().collage.naam) editor.rename(n);
+  }
 
   let tekstInvoer: { openen(tekst: string, id: string | null): void };
 
@@ -172,7 +219,8 @@
       naam={$editorState.collage.naam}
       kanOngedaan={$editorState.canUndo}
       kanOpnieuw={$editorState.canRedo}
-      onTerug={() => (vraagTerug = true)}
+      onTerug={terug}
+      onNaam={() => naamInvoer.openen(editor.get().collage.naam, null)}
       onOngedaan={() => editor.undo()}
       onOpnieuw={() => editor.redo()}
       onHelp={() => startTour(paneel ?? 'editor')}
@@ -209,10 +257,10 @@
 {#if vraagTerug}
   <Dialoog
     titel="Stoppen met deze collage?"
-    tekst="Je collage is nog niet bewaard. Bewaar hem eerst als je hem wil houden."
+    tekst="Op deze Chromebook wordt alles gewist bij het uitloggen. Bewaar je collage als bestand als je later verder wil werken."
     knoppen={[
       { label: 'Verder werken', hoofd: true, actie: () => (vraagTerug = false) },
-      { label: 'Stoppen', gevaar: true, actie: onTerug },
+      { label: 'Stoppen', gevaar: true, actie: () => { vraagTerug = false; void afsluiten(); } },
     ]}
   />
 {/if}
@@ -226,6 +274,7 @@
 {/if}
 
 <TekstInvoer bind:this={tekstInvoer} onKlaar={(t, id) => tekstKlaar(editor, id, t)} />
+<TekstInvoer bind:this={naamInvoer} prefix="naam" placeholder="Naam van je collage" onKlaar={(t) => naamKlaar(t)} />
 
 <style>
   .editor {

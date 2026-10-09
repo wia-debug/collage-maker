@@ -1,8 +1,22 @@
-import { test, expect, openNieuweCollage, elementen, tikOpCanvas } from './helpers';
+import { test, expect, openNieuweCollage, elementen, tikOpCanvas, metInstellingen } from './helpers';
 
-test('nieuwe collage openen en terugkeren', async ({ page }) => {
+test('PC: terug gaat zonder vraag naar het startscherm', async ({ page }) => {
   await openNieuweCollage(page, 'a4-liggend');
-  await expect(page.locator('#canvas-vlak canvas').first()).toBeVisible();
+  await page.evaluate(() => {
+    const { editor, maakVorm } = window.__collage;
+    editor.add(maakVorm({ x: 600, y: 600, vorm: 'rechthoek', breedte: 300, hoogte: 300 }));
+  });
+  await page.click('#knop-terug');
+  await expect(page.locator('#start-nieuw')).toBeVisible();
+});
+
+test('Chromebook: terug na een wijziging vraagt eerst', async ({ page }) => {
+  await metInstellingen(page, { toestel: 'chromebook' });
+  await openNieuweCollage(page, 'a4-liggend');
+  await page.evaluate(() => {
+    const { editor, maakVorm } = window.__collage;
+    editor.add(maakVorm({ x: 600, y: 600, vorm: 'rechthoek', breedte: 300, hoogte: 300 }));
+  });
   await page.click('#knop-terug');
   await expect(page.getByRole('alertdialog')).toBeVisible();
   await page.getByRole('button', { name: 'Stoppen' }).click();

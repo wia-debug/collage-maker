@@ -12,7 +12,6 @@ test('rondleiding start de eerste keer en via de help-knop', async ({ page }) =>
   await expect(page.locator('.driver-popover')).toHaveCount(0);
 
   await page.click('#knop-terug');
-  await page.getByRole('button', { name: 'Stoppen' }).click();
   await page.click('#start-nieuw');
   await page.click('#formaat-vierkant');
   await page.waitForTimeout(500);

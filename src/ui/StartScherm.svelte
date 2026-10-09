@@ -8,7 +8,12 @@
   import type { Collage, Formaat } from '../document/types';
 
   import type { Profiel } from '../storage/profielen';
-  let { onStart, profiel = null, onWissel }: { onStart: (c: Collage, opdracht?: string, pakket?: string) => void; profiel?: Profiel | null; onWissel?: () => void } = $props();
+  import MijnCollages from './MijnCollages.svelte';
+  import type { CollageSamenvatting } from '../storage/collages';
+  let { onStart, profiel = null, onWissel, collages = [], onOpen, onWis }: {
+    onStart: (c: Collage, opdracht?: string, pakket?: string) => void; profiel?: Profiel | null; onWissel?: () => void;
+    collages?: CollageSamenvatting[]; onOpen?: (id: string) => void; onWis?: (id: string) => void;
+  } = $props();
   let stap = $state<'menu' | 'formaat' | 'templates' | 'uitdagingen'>('menu');
   const formaten = Object.entries(FORMATEN) as [Formaat, (typeof FORMATEN)[Formaat]][];
 </script>
@@ -34,6 +39,7 @@
         <Icon name="trophy" size={64} /><span>Uitdaging</span>
       </button>
     </div>
+    {#if collages.length && onOpen && onWis}<MijnCollages {collages} {onOpen} {onWis} />{/if}
   {:else if stap === 'formaat'}
     <button class="terug" onclick={() => (stap = 'menu')}><Icon name="arrow-left" /> Terug</button>
     <h2>Kies een vorm</h2>
