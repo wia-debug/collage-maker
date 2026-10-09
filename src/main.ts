@@ -7,6 +7,8 @@ import { laadLettertypes } from './assets/fonts';
 import App from './App.svelte';
 import { registerSW } from 'virtual:pwa-register';
 
+// Bewust zonder update-callback: een nieuwe versie wordt pas actief na het sluiten van alle tabs,
+// zodat een lopende collage (nog geen opslag in fase 1) nooit door een herlaad verloren gaat.
 registerSW({ immediate: true });
 void laadLettertypes();
 document.addEventListener('gesturestart', (e) => e.preventDefault());

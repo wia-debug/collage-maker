@@ -4,7 +4,7 @@ import { playwright } from '@vitest/browser-playwright';
 import { VitePWA } from 'vite-plugin-pwa';
 
 const pwa = VitePWA({
-  registerType: 'autoUpdate',
+  registerType: 'prompt',
   pwaAssets: { config: true },
   manifest: {
     name: 'Collagemaker',
@@ -21,6 +21,8 @@ const pwa = VitePWA({
     globPatterns: ['**/*.{js,css,html,svg,woff2,png,ico}'],
     maximumFileSizeToCacheInBytes: 5_000_000,
     cleanupOutdatedCaches: true,
+    clientsClaim: true,
+    skipWaiting: false,
   },
 });
 

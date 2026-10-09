@@ -1,5 +1,7 @@
 import { test, expect, elementen } from './helpers';
 
+test.use({ serviceWorkers: 'allow' });
+
 test('werkt offline na het eerste bezoek', async ({ page, context }, info) => {
   test.skip(info.project.name !== 'chromebook', 'Service worker testen we in Chromium.');
   await page.goto('/');
