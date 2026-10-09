@@ -1,6 +1,15 @@
 import { SCHEMA_VERSIE, type Basis, type Collage, type Formaat, type FotoElement, type StickerElement, type TekenGereedschap, type TekeningElement, type TekstElement, type VormElement } from './types';
 
-export const nieuwId = (): string => crypto.randomUUID();
+export function uuidUitBytes(b: Uint8Array): string {
+  const c = Uint8Array.from(b);
+  c[6] = (c[6] & 0x0f) | 0x40;
+  c[8] = (c[8] & 0x3f) | 0x80;
+  const h = [...c].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+// crypto.randomUUID bestaat alleen in een "secure context" (https of localhost); getRandomValues overal.
+export const nieuwId = (): string => uuidUitBytes(crypto.getRandomValues(new Uint8Array(16)));
 
 export function nieuweCollage(formaat: Formaat, naam = 'Mijn collage'): Collage {
   const nu = Date.now();
