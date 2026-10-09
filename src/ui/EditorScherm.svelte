@@ -23,6 +23,7 @@
   import AchtergrondPaneel from './AchtergrondPaneel.svelte';
   import { tekstKlaar } from '../editor/tekst-acties';
   import { laadLettertypes } from '../assets/fonts';
+  import { FORMATEN } from '../document/formats';
   import { voegFotoToe } from '../editor/foto-acties';
   import { afbeeldingenUit, FOUTTEKST, ImportFout } from '../import/afbeelding';
   import { toon } from './toast';
@@ -39,6 +40,7 @@
   let toonOpdracht = $state(true);
   let vraagTerug = $state(false);
   let toonExport = $state(false);
+  let selectieVoorExport: string | null = null;
 
   const geselecteerd = $derived($editorState.collage.elementen.find((e) => e.id === $editorState.selectedId) ?? null);
   const PANEEL_VOOR: Record<Element['type'], Paneel | null> = { foto: 'foto', tekst: 'tekst', sticker: 'stickers', vorm: 'vormen', tekening: null };
@@ -62,6 +64,15 @@
     if (import.meta.env.MODE === 'e2e') (window as any).__collage = { editor, assets, controller, maakVorm };
     if (!tourGezien('editor')) setTimeout(() => startTour('editor'), 300);
   });
+  function voorUitladen(e: BeforeUnloadEvent) {
+    if (!editor.get().canUndo) return;
+    e.preventDefault();
+    e.returnValue = '';
+  }
+  onMount(() => {
+    window.addEventListener('beforeunload', voorUitladen);
+    return () => window.removeEventListener('beforeunload', voorUitladen);
+  });
   onDestroy(() => controller?.destroy());
 
   let tekstInvoer: { openen(tekst: string, id: string | null): void };
@@ -72,6 +83,7 @@
   }
 
   let bijsnijden = $state<{ id: string; bron: HTMLImageElement; start: Uitsnede | null } | null>(null);
+  const modaalOpen = $derived(!!bijsnijden || toonExport || vraagTerug);
 
   function openBijsnijden(id: string) {
     const f = editor.get().collage.elementen.find((e) => e.id === id) as FotoElement | undefined;
@@ -84,6 +96,13 @@
     const f = editor.get().collage.elementen.find((e) => e.id === bijsnijden!.id) as FotoElement;
     editor.update(f.id, { uitsnede: u, hoogte: Math.round((f.breedte * u.hoogte) / u.breedte) });
     bijsnijden = null;
+  }
+
+  function sluitExport() {
+    toonExport = false;
+    const id = selectieVoorExport;
+    selectieVoorExport = null;
+    if (id && editor.get().collage.elementen.some((e) => e.id === id)) editor.select(id);
   }
 
   let fotoInput: HTMLInputElement;
@@ -100,16 +119,18 @@
   }
 
   async function voegFotosToe(blobs: Blob[], positie?: { x: number; y: number }, vakId?: string) {
+    const f = FORMATEN[editor.get().collage.formaat];
+    const basis = positie ?? { x: f.breedte / 2, y: f.hoogte / 2 };
     for (const [i, b] of blobs.entries()) {
       try {
-        await voegFotoToe(editor, assets, b, { positie: positie && { x: positie.x + i * 40, y: positie.y + i * 40 }, vakId: i === 0 ? vakId : undefined });
+        await voegFotoToe(editor, assets, b, { positie: { x: basis.x + i * 40, y: basis.y + i * 40 }, vakId: i === 0 ? vakId : undefined });
       } catch (e) { meldFout(e); }
     }
   }
 
   async function opDrop(e: DragEvent) {
     e.preventDefault();
-    if (bijsnijden || toonExport) return;
+    if (modaalOpen) return;
     if (!e.dataTransfer) return;
     const opCanvas = (e.target as HTMLElement | null)?.closest?.('#canvas-vlak');
     const positie = opCanvas ? controller?.naarCanvas(e.clientX, e.clientY) : undefined;
@@ -117,7 +138,7 @@
   }
 
   async function opPlak(e: ClipboardEvent) {
-    if (bijsnijden || toonExport) return;
+    if (modaalOpen) return;
     if ((e.target as HTMLElement | null)?.closest?.('input, textarea, [contenteditable]')) return;
     const cd = e.clipboardData;
     if (!cd || !(cd.files.length || cd.types.includes('text/uri-list'))) return;
@@ -126,7 +147,7 @@
   }
 
   function opToets(e: KeyboardEvent) {
-    if (bijsnijden || toonExport) return;
+    if (modaalOpen) return;
     if ((e.target as HTMLElement).closest('input, textarea, [contenteditable]')) return;
     const actie = toetsNaarActie(e);
     if (!actie) return;
@@ -135,8 +156,8 @@
       case 'ongedaan': editor.undo(); break;
       case 'opnieuw': editor.redo(); break;
       case 'deselecteer': editor.select(null); break;
-      case 'wissen': if (!el) return; editor.remove(el.id); break;
-      case 'kopie': if (!el) return; editor.duplicate(el.id); break;
+      case 'wissen': if (!el || el.vergrendeld) return; editor.remove(el.id); break;
+      case 'kopie': if (!el || el.vergrendeld) return; editor.duplicate(el.id); break;
       case 'schuif': if (!el || el.vergrendeld) return; editor.update(el.id, { x: el.x + actie.dx, y: el.y + actie.dy }); break;
     }
     e.preventDefault();
@@ -155,7 +176,7 @@
       onOngedaan={() => editor.undo()}
       onOpnieuw={() => editor.redo()}
       onHelp={() => startTour(paneel ?? 'editor')}
-      onBewaar={() => { editor.select(null); toonExport = true; }}
+      onBewaar={() => { selectieVoorExport = editor.get().selectedId; editor.select(null); toonExport = true; }}
     />
   </div>
   {#if opdracht && toonOpdracht}
@@ -197,7 +218,7 @@
 {/if}
 
 {#if toonExport && controller}
-  <ExportDialoog {controller} collage={$editorState.collage} onSluit={() => (toonExport = false)} />
+  <ExportDialoog {controller} collage={$editorState.collage} onSluit={sluitExport} />
 {/if}
 
 {#if bijsnijden}
