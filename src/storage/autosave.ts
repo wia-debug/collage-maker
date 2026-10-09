@@ -12,8 +12,8 @@ export function isVolFout(e: unknown): boolean {
 export function startAutosave(o: { state: Readable<EditorState>; bewaar: (c: Collage) => Promise<void>; wacht?: number; onFout?: (e: unknown) => void }): Autosave {
   const wacht = o.wacht ?? 800;
   let eerste: Collage | null = null;
+  let huidig: Collage | null = null;
   let laatstBewaard: Collage | null = null;
-  let wachtend: Collage | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let keten: Promise<void> = Promise.resolve();
   let bewaardOoit = false;
@@ -26,28 +26,28 @@ export function startAutosave(o: { state: Readable<EditorState>; bewaar: (c: Col
 
   function flush(): Promise<void> {
     if (timer) { clearTimeout(timer); timer = null; }
-    const c = wachtend;
-    wachtend = null;
-    if (c && c !== laatstBewaard) {
-      keten = keten.then(async () => {
-        try {
-          await o.bewaar(c);
-          laatstBewaard = c;
-          bewaardOoit = true;
-        } catch (e) {
-          o.onFout?.(e);
-        }
-      });
-    }
+    keten = keten.then(async () => {
+      const c = huidig;
+      if (!c || c === laatstBewaard) return;
+      try {
+        await o.bewaar(c);
+        laatstBewaard = c;
+        bewaardOoit = true;
+      } catch (e) {
+        o.onFout?.(e);
+      }
+      // Tijdens het bewaren kan de toestand veranderd zijn (bijvoorbeeld ongedaan maken).
+      if (!gestopt && !timer && huidig !== laatstBewaard && laatstBewaard !== c) plan();
+    });
     return keten;
   }
 
   const stopLuisteren = o.state.subscribe((s) => {
     if (gestopt) return;
+    huidig = s.collage;
     if (eerste === null) { eerste = s.collage; laatstBewaard = s.collage; return; }
-    if (s.collage === laatstBewaard || s.collage === wachtend) return;
-    wachtend = s.collage;
-    plan();
+    if (huidig !== laatstBewaard) plan();
+    else if (timer) { clearTimeout(timer); timer = null; }
   });
 
   return {

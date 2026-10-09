@@ -82,6 +82,49 @@ describe('autosave', () => {
     await a.stop();
   });
 
+  it('ongedaan maken naar de opgeslagen toestand bewaart niets nieuws', async () => {
+    const c0 = nieuweCollage('vierkant');
+    const state = writable(toestand(c0));
+    const bewaard: string[] = [];
+    const a = startAutosave({ state, bewaar: async (c) => { bewaard.push(c.naam); }, wacht: 10_000 });
+    state.set(toestand({ ...c0, naam: 'c1' }));
+    state.set(toestand(c0));
+    await a.flush();
+    expect(bewaard).toEqual([]);
+    await a.stop();
+  });
+
+  it('ongedaan maken tijdens het bewaren eindigt op de laatste toestand', async () => {
+    const c0 = nieuweCollage('vierkant');
+    const state = writable(toestand(c0));
+    const bewaard: string[] = [];
+    const a = startAutosave({ state, wacht: 0, bewaar: async (c) => { await new Promise((r) => setTimeout(r, 30)); bewaard.push(c.naam); } });
+    state.set(toestand({ ...c0, naam: 'c1' }));
+    await new Promise((r) => setTimeout(r, 10));
+    state.set(toestand(c0));
+    await a.stop();
+    expect(bewaard.at(-1)).toBe(c0.naam);
+    expect(bewaard).toContain('c1');
+  });
+
+  it('een mislukte poging wordt bij de volgende flush opnieuw gedaan', async () => {
+    const c0 = nieuweCollage('vierkant');
+    const state = writable(toestand(c0));
+    const pogingen: Collage[] = [];
+    const a = startAutosave({
+      state, wacht: 10_000, onFout: () => {},
+      bewaar: async (c) => { pogingen.push(c); if (pogingen.length === 1) throw new Error('mislukt'); },
+    });
+    state.set(toestand({ ...c0, naam: 'x' }));
+    await a.flush();
+    expect(a.heeftBewaard()).toBe(false);
+    await a.flush();
+    expect(pogingen).toHaveLength(2);
+    expect(pogingen[1]).toBe(pogingen[0]);
+    expect(a.heeftBewaard()).toBe(true);
+    await a.stop();
+  });
+
   it('isVolFout herkent ook een ingepakte Dexie-fout', () => {
     expect(isVolFout({ name: 'AbortError', inner: { name: 'QuotaExceededError' } })).toBe(true);
     expect(isVolFout(new Error('anders'))).toBe(false);
