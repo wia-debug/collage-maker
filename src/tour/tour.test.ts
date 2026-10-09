@@ -29,6 +29,14 @@ describe('tour', () => {
     zetTourProfiel(null);
   });
 
+  it('onthoudt de leerkrachttour per toestel, niet per profiel', () => {
+    zetTourProfiel('p1');
+    markeerGezien('leerkracht');
+    zetTourProfiel('p2');
+    expect(tourGezien('leerkracht')).toBe(true);
+    zetTourProfiel(null);
+  });
+
   it('kapotte opslag geeft geen fout', () => {
     localStorage.setItem('collage-tours-gezien', '{kapot');
     expect(tourGezien('editor')).toBe(false);

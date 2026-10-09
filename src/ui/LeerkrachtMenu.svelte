@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import Icon from './Icon.svelte';
   import CijferCode from './CijferCode.svelte';
   import SymboolCode from './SymboolCode.svelte';
@@ -28,12 +29,15 @@
     { id: 'pc', naam: 'Computer', icoon: 'desktop' },
   ];
 
+  let tourTimer: ReturnType<typeof setTimeout> | undefined;
+  onDestroy(() => clearTimeout(tourTimer));
+
   async function codeKlaar(c: string) {
     if (inst.master && (await controleerCode(c, inst.master))) {
       open = true;
       fout = '';
       profielen = await lijstProfielen(db);
-      if (!tourGezien('leerkracht')) setTimeout(() => startTour('leerkracht'), 300);
+      if (!tourGezien('leerkracht')) tourTimer = setTimeout(() => startTour('leerkracht'), 300);
     } else fout = 'Dat is niet de juiste code.';
   }
 

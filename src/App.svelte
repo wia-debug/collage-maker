@@ -66,6 +66,12 @@
   let nieuwProfiel = $state(false);
   let toonLeerkracht = $state(false);
 
+  async function sluitLeerkracht() {
+    toonLeerkracht = false;
+    await laadProfielen();
+    if (profiel && !profielen.some((p) => p.id === profiel!.id)) { profiel = null; collages = []; zetTourProfiel(null); }
+  }
+
   function nieuweInstellingen(i: Instellingen) {
     inst = i;
     if (!profielenActief(i) && profiel) { profiel = null; zetTourProfiel(null); }
@@ -104,7 +110,7 @@
   <StartScherm onStart={start} {profiel} onWissel={profielenActief(inst) ? wissel : undefined} {collages} onOpen={open} onWis={wis} onOpenBestand={inst.toestel === 'ipad' ? undefined : openBestand} onLeerkracht={() => (toonLeerkracht = true)} />
 {/if}
 {#if toonLeerkracht && inst}
-  <LeerkrachtMenu {inst} onInstellingen={nieuweInstellingen} onSluit={() => { toonLeerkracht = false; void laadProfielen(); }} />
+  <LeerkrachtMenu {inst} onInstellingen={nieuweInstellingen} onSluit={sluitLeerkracht} />
 {/if}
 <Toast />
 

@@ -69,7 +69,7 @@ export function tourGezien(id: TourId): boolean {
 }
 
 export function markeerGezien(id: TourId): void {
-  const sleutel = profielSleutel ?? SLEUTEL;
+  const sleutel = id === 'leerkracht' ? SLEUTEL : (profielSleutel ?? SLEUTEL);
   try {
     localStorage.setItem(sleutel, JSON.stringify([...new Set([...gelezen(sleutel), id])]));
   } catch { /* opslag geblokkeerd: tour komt dan opnieuw */ }
