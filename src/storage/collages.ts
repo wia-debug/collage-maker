@@ -1,5 +1,5 @@
 import type { Collage } from '../document/types';
-import { leesCollage } from '../document/validatie';
+import { CollageFout, leesCollage } from '../document/validatie';
 import type { AssetStore } from '../assets/store';
 import type { CollageDb } from './db';
 
@@ -25,7 +25,8 @@ export async function bewaarCollage(db: CollageDb, c: Collage, assets: { blob(id
     for (const id of nodig) {
       if (opgeslagen.has(id)) continue;
       const blob = assets.blob(id);
-      if (blob) await db.assets.put({ collageId: c.id, id, blob });
+      if (!blob) throw new Error(`Afbeelding ontbreekt: ${id}`);
+      await db.assets.put({ collageId: c.id, id, blob });
     }
     const weg = [...opgeslagen].filter((id) => !nodig.includes(id)).map((id) => [c.id, id] as [string, string]);
     if (weg.length) await db.assets.bulkDelete(weg);
@@ -33,10 +34,15 @@ export async function bewaarCollage(db: CollageDb, c: Collage, assets: { blob(id
 }
 
 export async function laadCollage(db: CollageDb, id: string): Promise<{ collage: Collage; blobs: Map<string, Blob> } | null> {
-  const rij = await db.collages.get(id);
+  const { rij, assets } = await db.transaction('r', db.collages, db.assets, async () => ({
+    rij: await db.collages.get(id),
+    assets: await db.assets.where('collageId').equals(id).toArray(),
+  }));
   if (!rij) return null;
-  const assets = await db.assets.where('collageId').equals(id).toArray();
-  return { collage: leesCollage(rij.data), blobs: new Map(assets.map((a) => [a.id, a.blob])) };
+  const collage = leesCollage(rij.data);
+  const blobs = new Map(assets.map((a) => [a.id, a.blob]));
+  if (gebruikteAssets(collage).some((a) => !blobs.has(a))) throw new CollageFout('ongeldig');
+  return { collage, blobs };
 }
 
 export async function lijstCollages(db: CollageDb, profielId: string | null): Promise<CollageSamenvatting[]> {

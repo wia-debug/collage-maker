@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { CollageFout } from '../document/validatie';
 import { maakDb, type CollageDb } from './db';
 import { bewaarCollage, gebruikteAssets, laadCollage, lijstCollages, vulAssets, wisCollages } from './collages';
 import { kopieVan, maakFoto, nieuweCollage, nieuwId } from '../document/create';
@@ -79,5 +80,29 @@ describe('collages', () => {
     expect(k.id).not.toBe(c.id);
     expect(k.profielId).toBe('p9');
     expect(k.elementen).toEqual(c.elementen);
+  });
+
+  it('bewaren met ontbrekende afbeelding mislukt en schrijft niets', async () => {
+    const c = { ...nieuweCollage('vierkant'), elementen: [maakFoto({ x: 0, y: 0, breedte: 1, hoogte: 1, assetId: 'weg' })] };
+    await expect(bewaarCollage(db, c, new AssetStore())).rejects.toThrow('Afbeelding ontbreekt: weg');
+    expect(await db.collages.count()).toBe(0);
+    expect(await db.assets.count()).toBe(0);
+  });
+
+  it('laden met ontbrekende afbeelding is ongeldig', async () => {
+    const { c, assets } = await collageMetFoto();
+    await bewaarCollage(db, c, assets);
+    await db.assets.clear();
+    await expect(laadCollage(db, c.id)).rejects.toSatisfy((e) => e instanceof CollageFout && e.code === 'ongeldig');
+  });
+
+  it('wissen laat de afbeeldingen van een andere collage staan', async () => {
+    const een = await collageMetFoto();
+    const twee = await collageMetFoto();
+    await bewaarCollage(db, een.c, een.assets);
+    await bewaarCollage(db, twee.c, twee.assets);
+    await wisCollages(db, [een.c.id]);
+    expect(await db.assets.where('collageId').equals(twee.c.id).count()).toBe(1);
+    expect(await db.assets.count()).toBe(1);
   });
 });

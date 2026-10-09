@@ -9,7 +9,8 @@ export async function naarBestand(c: Collage, assets: { blob(id: string): Blob |
   const map = zip.folder('assets')!;
   for (const id of gebruikteAssets(c)) {
     const b = assets.blob(id);
-    if (b) map.file(id, b);
+    if (!b) throw new Error(`Afbeelding ontbreekt: ${id}`);
+    map.file(id, b);
   }
   if (voorbeeld) zip.file('voorbeeld.png', voorbeeld);
   return zip.generateAsync({ type: 'blob', mimeType: 'application/zip' });
@@ -18,16 +19,18 @@ export async function naarBestand(c: Collage, assets: { blob(id: string): Blob |
 export async function vanBestand(bestand: Blob): Promise<{ collage: Collage; blobs: Map<string, Blob> }> {
   let zip: JSZip;
   try { zip = await JSZip.loadAsync(bestand); } catch { throw new CollageFout('ongeldig'); }
-  const json = zip.file('collage.json');
-  if (!json) throw new CollageFout('ongeldig');
-  let data: unknown;
-  try { data = JSON.parse(await json.async('string')); } catch { throw new CollageFout('ongeldig'); }
-  const collage = leesCollage(data);
-  const blobs = new Map<string, Blob>();
-  for (const id of gebruikteAssets(collage)) {
-    const f = zip.file(`assets/${id}`);
-    if (!f) throw new CollageFout('ongeldig');
-    blobs.set(id, await f.async('blob'));
+  try {
+    const json = zip.file('collage.json');
+    if (!json) throw new CollageFout('ongeldig');
+    const collage = leesCollage(JSON.parse(await json.async('string')));
+    const blobs = new Map<string, Blob>();
+    for (const id of gebruikteAssets(collage)) {
+      const f = zip.file(`assets/${id}`);
+      if (!f) throw new CollageFout('ongeldig');
+      blobs.set(id, await f.async('blob'));
+    }
+    return { collage, blobs };
+  } catch (e) {
+    throw e instanceof CollageFout ? e : new CollageFout('ongeldig');
   }
-  return { collage, blobs };
 }

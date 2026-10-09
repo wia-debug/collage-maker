@@ -47,4 +47,24 @@ describe('.collage-bestand', () => {
     z.file('collage.json', JSON.stringify({ ...nieuweCollage('vierkant'), versie: SCHEMA_VERSIE + 1 }));
     expect(await code(vanBestand(await z.generateAsync({ type: 'blob' })))).toBe('nieuwer');
   });
+
+  it('naarBestand met ontbrekende afbeelding mislukt', async () => {
+    const c = { ...nieuweCollage('vierkant'), elementen: [maakFoto({ x: 0, y: 0, breedte: 1, hoogte: 1, assetId: 'weg' })] };
+    await expect(naarBestand(c, new AssetStore())).rejects.toThrow('Afbeelding ontbreekt: weg');
+  });
+
+  it('kapotte afbeelding in het zipbestand is ongeldig', async () => {
+    const assets = new AssetStore();
+    const id = await assets.addBlob(await png());
+    const c = { ...nieuweCollage('vierkant'), elementen: [maakFoto({ x: 0, y: 0, breedte: 1, hoogte: 1, assetId: id })] };
+    const z = new JSZip();
+    z.file('collage.json', JSON.stringify(c));
+    z.file(`assets/${id}`, new Uint8Array(4000).map((_, i) => (i * 7) % 251), { compression: 'DEFLATE' });
+    const bytes = await z.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+    const naam = new TextEncoder().encode(`assets/${id}`);
+    let start = -1;
+    for (let i = 0; i < bytes.length - naam.length && start < 0; i++) if (naam.every((b, k) => bytes[i + k] === b)) start = i;
+    for (let i = start + naam.length; i < start + naam.length + 40; i++) bytes[i] ^= 0xff;
+    expect(await code(vanBestand(new Blob([bytes])))).toBe('ongeldig');
+  });
 });
