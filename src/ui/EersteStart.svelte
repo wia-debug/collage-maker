@@ -31,8 +31,15 @@
   }
   async function klaar(profielenAan: boolean) {
     bezig = true;
-    const i = await schrijfInstellingen(db, { toestel, profielenAan, master: await maakHash(eerste) });
-    onKlaar(i);
+    fout = '';
+    try {
+      const i = await schrijfInstellingen(db, { toestel, profielenAan, master: await maakHash(eerste) });
+      onKlaar(i);
+    } catch {
+      fout = 'Bewaren lukte niet. Probeer het nog eens.';
+    } finally {
+      bezig = false;
+    }
   }
 </script>
 
@@ -55,6 +62,7 @@
         </button>
       {/each}
     </div>
+    {#if fout}<p class="fout" role="alert">{fout}</p>{/if}
   {:else}
     <h2>Profielen gebruiken?</h2>
     <p>Met profielen heeft elk kind een eigen plek met een geheime code. Handig als meerdere kinderen deze computer gebruiken.</p>
@@ -62,6 +70,7 @@
       <button id="profielen-ja" class="hoofd" disabled={bezig} onclick={() => klaar(true)}>Ja, met profielen</button>
       <button id="profielen-nee" disabled={bezig} onclick={() => klaar(false)}>Nee</button>
     </div>
+    {#if fout}<p class="fout" role="alert">{fout}</p>{/if}
   {/if}
 </main>
 
@@ -70,6 +79,7 @@
   h1 { color: var(--koraal); font-size: clamp(2rem, 6vw, 3rem); }
   p { max-width: 560px; font-size: 1.15rem; line-height: 1.5; margin: 0; }
   .let-op { font-weight: 700; }
+  .fout { color: #c0392b; font-weight: 700; }
   .hoofd { padding: 0 24px; }
   .kaarten { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; width: min(900px, 100%); }
   .kaart { flex-direction: column; gap: 8px; padding: 20px; border-radius: 24px; box-shadow: var(--schaduw); text-align: center; }

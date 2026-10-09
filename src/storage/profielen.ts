@@ -30,7 +30,7 @@ export async function lijstProfielen(db: CollageDb): Promise<Profiel[]> {
 export async function controleerPin(db: CollageDb, id: string, pin: string[]): Promise<boolean> {
   const p = await db.profielen.get(id);
   if (!p || !(await controleerCode(pinTekst(pin), p.pin))) return false;
-  await db.profielen.update(id, { laatstGebruikt: Date.now() });
+  try { await db.profielen.update(id, { laatstGebruikt: Date.now() }); } catch { /* best-effort: een goede code blijft goed */ }
   return true;
 }
 

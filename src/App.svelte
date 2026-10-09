@@ -35,10 +35,14 @@
 
   async function vraagOpruimen() {
     if (!inst || inst.toestel === 'chromebook') return;
-    const sleutel = profiel?.id ?? '';
+    if (profielenActief(inst) && !profiel) return;
+    const pid = profiel?.id ?? null;
+    const sleutel = pid ?? '';
     if (gevraagd.has(sleutel)) return;
     gevraagd.add(sleutel);
-    teOpruimen = await teVragen(db, profiel?.id ?? null);
+    const lijst = await teVragen(db, pid);
+    if ((profiel?.id ?? null) !== pid) return;
+    teOpruimen = lijst;
   }
 
   async function opruimenJa() {
@@ -51,7 +55,7 @@
   async function open(id: string) {
     try {
       const r = await laadCollage(db, id);
-      if (!r) return;
+      if (!r) { toon('Deze collage bestaat niet meer.', 'warning'); await herlaadLijst(); return; }
       const a = new AssetStore();
       await vulAssets(a, r.blobs);
       editorAssets = a;
@@ -106,21 +110,32 @@
   function kiesProfiel(p: Profiel) { profiel = p; nieuwProfiel = false; zetTourProfiel(p.id); void herlaadLijst(); }
   function wissel() { profiel = null; collages = []; zetTourProfiel(null); void laadProfielen(); }
 
+  let bootFout = $state(false);
   onMount(async () => {
-    const i = await opstart(db);
-    await laadProfielen();
-    await herlaadLijst();
-    inst = i;
-    void vraagOpruimen();
+    try {
+      const i = await opstart(db);
+      await laadProfielen();
+      await herlaadLijst();
+      inst = i;
+      void vraagOpruimen();
+    } catch {
+      bootFout = true;
+    }
   });
 
   function start(c: Collage, o?: string, p?: string) { editorAssets = undefined; collage = { ...c, profielId: profiel?.id ?? null }; opdracht = o ?? null; pakket = p ?? null; }
   function terug() { collage = null; opdracht = null; pakket = null; editorAssets = undefined; void herlaadLijst(); }
 </script>
 
-{#if !inst}
+{#if bootFout}
+  <main class="boot-fout">
+    <h1>Er ging iets mis</h1>
+    <p>Ik kan niets bewaren op dit toestel. Controleer of de browser websitegegevens toestaat (geen privévenster).</p>
+    <button id="opnieuw-proberen" class="hoofd" onclick={() => location.reload()}>Opnieuw proberen</button>
+  </main>
+{:else if !inst}
   <main class="laden" aria-busy="true"></main>
-{:else if !inst.master || !inst.toestel}
+{:else if !inst.toestel || (!inst.master && inst.toestel !== 'chromebook')}
   <EersteStart onKlaar={(i) => (inst = i)} />
 {:else if profielenActief(inst) && !profiel}
   {#if nieuwProfiel}
@@ -143,4 +158,7 @@
 
 <style>
   .laden { min-height: 100dvh; }
+  .boot-fout { min-height: 100dvh; box-sizing: border-box; padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; text-align: center; }
+  .boot-fout p { max-width: 560px; font-size: 1.15rem; line-height: 1.5; margin: 0; }
+  .boot-fout .hoofd { padding: 0 24px; }
 </style>

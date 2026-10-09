@@ -5,7 +5,7 @@
   import SymboolCode from './SymboolCode.svelte';
   import Dialoog from './Dialoog.svelte';
   import { db } from '../storage/db';
-  import { controleerCode } from '../storage/hash';
+  import { controleerCode, maakHash } from '../storage/hash';
   import { profielenActief, schrijfInstellingen, type Instellingen, type Toestel } from '../storage/instellingen';
   import { lijstProfielen, PIN_LENGTE, PIN_SYMBOLEN, wisProfiel, zetPin, type Profiel } from '../storage/profielen';
   import { wisAlles } from '../storage/opstart';
@@ -32,13 +32,33 @@
   let tourTimer: ReturnType<typeof setTimeout> | undefined;
   onDestroy(() => clearTimeout(tourTimer));
 
+  async function openMenu() {
+    open = true;
+    fout = '';
+    profielen = await lijstProfielen(db);
+    if (!tourGezien('leerkracht')) tourTimer = setTimeout(() => startTour('leerkracht'), 300);
+  }
+
   async function codeKlaar(c: string) {
-    if (inst.master && (await controleerCode(c, inst.master))) {
+    if (inst.master && (await controleerCode(c, inst.master))) await openMenu();
+    else fout = 'Dat is niet de juiste code.';
+  }
+
+  // Chromebook zonder mastercode: de eerste keer dat het menu opent, kiest de leerkracht er een.
+  let nieuweStap = $state<'code' | 'herhaal'>('code');
+  let nieuweEerste = '';
+  function nieuweCodeKlaar(c: string) { nieuweEerste = c; fout = ''; nieuweStap = 'herhaal'; }
+  async function nieuweHerhaal(c: string) {
+    if (c !== nieuweEerste) { fout = 'De codes zijn niet gelijk. Probeer opnieuw.'; nieuweStap = 'code'; return; }
+    try {
+      const i = await schrijfInstellingen(db, { master: await maakHash(c) });
       open = true;
-      fout = '';
-      profielen = await lijstProfielen(db);
-      if (!tourGezien('leerkracht')) tourTimer = setTimeout(() => startTour('leerkracht'), 300);
-    } else fout = 'Dat is niet de juiste code.';
+      onInstellingen(i);
+      await openMenu();
+    } catch {
+      fout = 'Bewaren lukte niet. Probeer het nog eens.';
+      nieuweStap = 'code';
+    }
   }
 
   async function zet(patch: Partial<Instellingen>) { onInstellingen(await schrijfInstellingen(db, patch)); }
@@ -71,7 +91,13 @@
   <div class="menu" role="dialog" aria-modal="true" aria-labelledby="leerkracht-titel">
     <button id="leerkracht-sluit" class="sluit" aria-label="Sluiten" onclick={onSluit}><Icon name="x" /></button>
     <h1 id="leerkracht-titel">Voor de leerkracht</h1>
-    {#if !open}
+    {#if !open && !inst.master}
+      {#if nieuweStap === 'code'}
+        <CijferCode titel="Kies een code van 6 cijfers" {fout} onKlaar={nieuweCodeKlaar} />
+      {:else}
+        <CijferCode titel="Typ de code nog een keer" onKlaar={nieuweHerhaal} />
+      {/if}
+    {:else if !open}
       <CijferCode titel="Typ je code" {fout} onKlaar={codeKlaar} />
     {:else if pinVoor}
       <p>Nieuwe geheime code voor <strong>{pinVoor.naam}</strong></p>

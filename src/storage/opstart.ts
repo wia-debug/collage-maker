@@ -13,9 +13,16 @@ async function zaaiE2e(db: CollageDb): Promise<void> {
   await schrijfInstellingen(db, { toestel: cfg.toestel, profielenAan: cfg.profielenAan ?? false, master: await maakHash(cfg.mastercode ?? '123456', 1000) });
 }
 
-export async function opstart(db: CollageDb): Promise<Instellingen> {
+export function toestelUitUrl(search: string): Toestel | null {
+  const t = new URLSearchParams(search).get('toestel');
+  return t === 'ipad' || t === 'chromebook' || t === 'pc' ? t : null;
+}
+
+export async function opstart(db: CollageDb, search: string = location.search): Promise<Instellingen> {
   if (import.meta.env.MODE === 'e2e') await zaaiE2e(db);
-  const inst = await leesInstellingen(db);
+  let inst = await leesInstellingen(db);
+  const uitUrl = toestelUitUrl(search);
+  if (!inst.toestel && uitUrl) inst = await schrijfInstellingen(db, { toestel: uitUrl, profielenAan: false, master: null });
   if (inst.toestel && inst.toestel !== 'chromebook') {
     try { await navigator.storage?.persist?.(); } catch { /* niet ondersteund */ }
     try { await ruimAutomatischOp(db); } catch { /* opruimen mag opstarten nooit blokkeren */ }

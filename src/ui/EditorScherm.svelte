@@ -44,7 +44,7 @@
   let foutGemeld = false;
   const autosave = startAutosave({
     state: editor.state,
-    bewaar: (c) => bewaarCollage(db, c, assets),
+    bewaar: async (c) => { await bewaarCollage(db, c, assets); foutGemeld = false; },
     onFout: (e) => {
       if (foutGemeld) return;
       foutGemeld = true;
@@ -53,15 +53,24 @@
   });
   const gewijzigdSindsBestand = () => editor.get().collage !== laatsteBestand;
 
+  let sluiten = false;
+  let nietBewaard = $state(false);
   async function afsluiten() {
-    await autosave.flush();
-    if (autosave.heeftBewaard()) {
-      try {
-        const c = editor.get().collage;
-        await bewaarCollage(db, c, assets, await maakVoorbeeld(c, assets, 320));
-      } catch { /* een voorbeeld is niet nodig om verder te kunnen */ }
+    if (sluiten) return;
+    sluiten = true;
+    try {
+      await autosave.flush();
+      if (autosave.laatsteMislukt()) { nietBewaard = true; return; }
+      if (autosave.heeftBewaard()) {
+        try {
+          const c = editor.get().collage;
+          await bewaarCollage(db, c, assets, await maakVoorbeeld(c, assets, 320));
+        } catch { /* een voorbeeld is niet nodig om verder te kunnen */ }
+      }
+      onTerug();
+    } finally {
+      sluiten = false;
     }
-    onTerug();
   }
 
   function openBewaren() { selectieVoorExport = editor.get().selectedId; editor.select(null); toonExport = true; }
@@ -273,8 +282,20 @@
   />
 {/if}
 
+{#if nietBewaard}
+  <Dialoog
+    titel="Je collage is niet bewaard"
+    tekst="Bewaar je collage als foto of als bestand, anders ben je je laatste werk kwijt."
+    knoppen={[
+      { label: 'Bewaren', hoofd: true, actie: () => { nietBewaard = false; openBewaren(); } },
+      { label: 'Verder werken', actie: () => (nietBewaard = false) },
+      { label: 'Toch stoppen', gevaar: true, actie: () => { nietBewaard = false; onTerug(); } },
+    ]}
+  />
+{/if}
+
 {#if toonExport && controller}
-  <ExportDialoog {controller} collage={$editorState.collage} {assets} onBestandBewaard={() => (laatsteBestand = editor.get().collage)} onSluit={sluitExport} />
+  <ExportDialoog {controller} metBestand={toestel !== 'ipad'} collage={$editorState.collage} {assets} onBestandBewaard={() => (laatsteBestand = editor.get().collage)} onSluit={sluitExport} />
 {/if}
 
 {#if bijsnijden}

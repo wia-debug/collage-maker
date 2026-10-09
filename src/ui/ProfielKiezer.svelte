@@ -11,8 +11,12 @@
   async function pinKlaar(pin: string[]) {
     const p = kies;
     if (!p) return;
-    if (await controleerPin(db, p.id, pin)) { kies = null; fout = ''; onGekozen(p); }
-    else fout = 'Dat is niet je code. Probeer opnieuw.';
+    try {
+      if (await controleerPin(db, p.id, pin)) { kies = null; fout = ''; onGekozen(p); }
+      else fout = 'Dat is niet je code. Probeer opnieuw.';
+    } catch {
+      fout = 'Er ging iets mis. Probeer het nog eens.';
+    }
   }
 </script>
 

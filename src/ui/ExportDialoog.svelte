@@ -8,7 +8,7 @@
   import type { AssetStore } from '../assets/store';
   import { naarBestand } from '../storage/bestand';
 
-  let { controller, collage, assets, onSluit, onBestandBewaard }: { controller: CanvasController; collage: Collage; assets: AssetStore; onSluit: () => void; onBestandBewaard?: () => void } = $props();
+  let { controller, collage, assets, onSluit, onBestandBewaard, metBestand = true }: { controller: CanvasController; collage: Collage; assets: AssetStore; onSluit: () => void; onBestandBewaard?: () => void; metBestand?: boolean } = $props();
   let klaar = $state.raw<{ blob: Blob; naam: string; voorbeeld: string; soort: 'png' | 'pdf' | 'collage' } | null>(null);
   let bezig = $state(false);
   let bewaarBezig = $state(false);
@@ -51,10 +51,12 @@
   <div class="dialoog" role="dialog" aria-modal="true" aria-labelledby="export-titel">
     <h2 id="export-titel">Bewaar je collage</h2>
     {#if !klaar}
-      <div class="keuze">
+      <div class="keuze" class:twee={!metBestand}>
         <button id="export-png" disabled={bezig} onclick={() => maak('png')}><Icon name="file-png" size={56} /><span>Als foto</span></button>
         <button id="export-pdf" disabled={bezig} onclick={() => maak('pdf')}><Icon name="file-pdf" size={56} /><span>Als PDF</span></button>
-        <button id="export-collage" disabled={bezig} onclick={() => maak('collage')}><Icon name="floppy-disk" size={56} /><span>Om verder te werken</span></button>
+        {#if metBestand}
+          <button id="export-collage" disabled={bezig} onclick={() => maak('collage')}><Icon name="floppy-disk" size={56} /><span>Om verder te werken</span></button>
+        {/if}
       </div>
       {#if bezig}<p>Even geduld...</p>{/if}
     {:else}
@@ -69,6 +71,7 @@
   .scherm { position: fixed; inset: 0; background: rgba(45, 42, 50, 0.45); display: grid; place-items: center; z-index: 90; padding: 16px; }
   .dialoog { background: var(--paneel); border-radius: 28px; padding: 24px; width: min(520px, 100%); box-shadow: var(--schaduw); display: grid; gap: 14px; }
   .keuze { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .keuze.twee { grid-template-columns: repeat(2, 1fr); }
   .keuze button { flex-direction: column; min-height: 140px; background: var(--creme); font-size: 1.2rem; }
   img { width: 100%; max-height: 50dvh; object-fit: contain; background: var(--werkvlak); border-radius: 16px; }
   .breed { width: 100%; }

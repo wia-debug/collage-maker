@@ -2,7 +2,7 @@ import type { Readable } from 'svelte/store';
 import type { Collage } from '../document/types';
 import type { EditorState } from '../editor/store';
 
-export interface Autosave { flush(): Promise<void>; stop(): Promise<void>; heeftBewaard(): boolean }
+export interface Autosave { flush(): Promise<void>; stop(): Promise<void>; heeftBewaard(): boolean; laatsteMislukt(): boolean }
 
 export function isVolFout(e: unknown): boolean {
   const naam = (x: unknown) => (typeof x === 'object' && x !== null ? (x as { name?: string }).name : undefined);
@@ -18,6 +18,7 @@ export function startAutosave(o: { state: Readable<EditorState>; bewaar: (c: Col
   let keten: Promise<void> = Promise.resolve();
   let bewaardOoit = false;
   let gestopt = false;
+  let mislukt = false;
 
   function plan(): void {
     if (timer) clearTimeout(timer);
@@ -28,12 +29,15 @@ export function startAutosave(o: { state: Readable<EditorState>; bewaar: (c: Col
     if (timer) { clearTimeout(timer); timer = null; }
     keten = keten.then(async () => {
       const c = huidig;
-      if (!c || c === laatstBewaard) return;
+      if (!c) return;
+      if (c === laatstBewaard) { mislukt = false; return; }
       try {
         await o.bewaar(c);
         laatstBewaard = c;
         bewaardOoit = true;
+        mislukt = false;
       } catch (e) {
+        mislukt = true;
         o.onFout?.(e);
       }
       // Tijdens het bewaren kan de toestand veranderd zijn (bijvoorbeeld ongedaan maken).
@@ -54,5 +58,6 @@ export function startAutosave(o: { state: Readable<EditorState>; bewaar: (c: Col
     flush,
     async stop() { gestopt = true; stopLuisteren(); await flush(); },
     heeftBewaard: () => bewaardOoit,
+    laatsteMislukt: () => mislukt,
   };
 }

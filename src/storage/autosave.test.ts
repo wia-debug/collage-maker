@@ -150,6 +150,34 @@ describe('autosave', () => {
     await a.stop();
   });
 
+  it('laatsteMislukt: true na een mislukte poging, false na een geslaagde', async () => {
+    const c0 = nieuweCollage('vierkant');
+    const state = writable(toestand(c0));
+    let faal = true;
+    const a = startAutosave({ state, bewaar: async () => { if (faal) throw new Error('vol'); }, wacht: 10 });
+    expect(a.laatsteMislukt()).toBe(false);
+    state.set(toestand({ ...c0, naam: '1' }));
+    await a.flush();
+    expect(a.laatsteMislukt()).toBe(true);
+    faal = false;
+    await a.flush();
+    expect(a.laatsteMislukt()).toBe(false);
+    await a.stop();
+  });
+
+  it('laatsteMislukt wordt false als ongedaan maken terugkeert naar de bewaarde toestand', async () => {
+    const c0 = nieuweCollage('vierkant');
+    const state = writable(toestand(c0));
+    const a = startAutosave({ state, bewaar: async () => { throw new Error('vol'); }, wacht: 10 });
+    state.set(toestand({ ...c0, naam: '1' }));
+    await a.flush();
+    expect(a.laatsteMislukt()).toBe(true);
+    state.set(toestand(c0));
+    await a.flush();
+    expect(a.laatsteMislukt()).toBe(false);
+    await a.stop();
+  });
+
   it('isVolFout herkent ook een ingepakte Dexie-fout', () => {
     expect(isVolFout({ name: 'AbortError', inner: { name: 'QuotaExceededError' } })).toBe(true);
     expect(isVolFout(new Error('anders'))).toBe(false);

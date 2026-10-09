@@ -54,4 +54,10 @@ describe('profielen', () => {
     expect(await lijstCollages(db, b.id)).toHaveLength(1);
     expect((await lijstProfielen(db)).map((p) => p.naam)).toEqual(['B']);
   });
+
+  it('een juiste pin blijft geldig als laatstGebruikt niet bewaard kan worden', async () => {
+    const p = await maakProfiel(db, { naam: 'Vol', symbool: 'rocket', kleur: '#FF6B6B', pin });
+    db.profielen.update = (() => Promise.reject(new Error('vol'))) as unknown as typeof db.profielen.update;
+    expect(await controleerPin(db, p.id, pin)).toBe(true);
+  });
 });
