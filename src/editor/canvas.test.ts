@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import Konva from 'konva';
 import { CanvasController } from './canvas';
 import { createEditor } from './store';
-import { maakFoto, maakVorm, nieuweCollage } from '../document/create';
+import { maakFoto, maakTekening, maakVorm, nieuweCollage } from '../document/create';
 
 const leeg = { image: () => undefined };
 let ctrl: CanvasController | null = null;
@@ -317,6 +317,74 @@ describe('CanvasController', () => {
       ctrl.stage.fire('pointerup', ev(1));
       expect(editor.get().collage.elementen.map((e) => e.id)).toEqual([v.id]);
     });
+  });
+
+  describe('gum-veeg', () => {
+    const ev = (pointerId: number) => ({ evt: { pointerId } }) as any;
+    function opzetMetTekeningen() {
+      const o = opzet();
+      const t1 = maakTekening([10, 10, 60, 60], 'pen', '#000000', 14);
+      const t2 = maakTekening([300, 300, 360, 360], 'pen', '#000000', 14);
+      o.editor.add(t1); o.editor.add(t2);
+      o.ctrl.setGereedschap('gum');
+      const s = o.ctrl.stage as any;
+      s.getPointerPosition = () => ({ x: 1, y: 1 });
+      const raak = (t: { id: string }) => { s.getIntersection = () => o.ctrl.group(t.id)!.findOne('Line'); };
+      return { ...o, t1, t2, raak };
+    }
+
+    it('een veeg over twee tekeningen is één undo-stap', () => {
+      const { editor, ctrl, t1, t2, raak } = opzetMetTekeningen();
+      raak(t1);
+      ctrl.stage.fire('pointerdown', ev(1));
+      raak(t2);
+      ctrl.stage.fire('pointermove', ev(1));
+      expect(ctrl.group(t1.id)!.visible()).toBe(false);
+      expect(ctrl.group(t2.id)!.visible()).toBe(false);
+      expect(editor.get().collage.elementen).toHaveLength(2);
+      ctrl.stage.fire('pointerup', ev(1));
+      expect(editor.get().collage.elementen).toHaveLength(0);
+      editor.undo();
+      expect(editor.get().collage.elementen.map((e) => e.id)).toEqual([t1.id, t2.id]);
+    });
+
+    it('pointercancel en gereedschapswissel laten alles staan', () => {
+      const { editor, ctrl, t1, t2, raak } = opzetMetTekeningen();
+      raak(t1);
+      ctrl.stage.fire('pointerdown', ev(1));
+      raak(t2);
+      ctrl.stage.fire('pointermove', ev(1));
+      ctrl.stage.fire('pointercancel', ev(1));
+      expect(editor.get().collage.elementen).toHaveLength(2);
+      expect(ctrl.group(t1.id)!.visible()).toBe(true);
+      expect(ctrl.group(t2.id)!.visible()).toBe(true);
+      raak(t1);
+      ctrl.stage.fire('pointerdown', ev(1));
+      ctrl.setGereedschap('selecteer');
+      expect(ctrl.group(t1.id)!.visible()).toBe(true);
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }));
+      expect(editor.get().collage.elementen).toHaveLength(2);
+    });
+  });
+
+  it('exportPng cachet gefilterde fotos op export-resolutie en herstelt daarna', () => {
+    const bron = document.createElement('canvas');
+    bron.width = 100; bron.height = 100;
+    div = document.createElement('div');
+    div.style.cssText = 'width:800px;height:600px;position:fixed;left:0;top:0';
+    document.body.append(div);
+    const editor = createEditor(nieuweCollage('vierkant'));
+    ctrl = new CanvasController(div, editor, { image: () => bron as unknown as HTMLImageElement });
+    editor.add({ ...maakFoto({ x: 100, y: 100, breedte: 400, hoogte: 400, assetId: 'a' }), filter: 'zwartwit' });
+    const img = ctrl.group(editor.get().collage.elementen[0].id)!.findOne('Image') as Konva.Image;
+    const cacheBreedte = () => (img as any)._getCanvasCache().scene._canvas.width as number;
+    expect(cacheBreedte()).toBe(400);
+    const gezien: number[] = [];
+    const toData = ctrl.stage.toDataURL.bind(ctrl.stage);
+    (ctrl.stage as any).toDataURL = (cfg: any) => { gezien.push(cacheBreedte()); return toData(cfg); };
+    ctrl.exportPng(2);
+    expect(gezien[0]).toBeGreaterThanOrEqual(800);
+    expect(cacheBreedte()).toBe(400);
   });
 
   async function pixel(url: string, x: number, y: number) {

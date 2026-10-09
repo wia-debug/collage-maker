@@ -32,6 +32,7 @@ export class CanvasController {
   private pen: { gereedschap: TekenGereedschap; kleur: string; dikte: number } = { gereedschap: 'pen', kleur: '#2D2A32', dikte: 14 };
   private streek: { lijn: Konva.Line; punten: number[]; pointerId: number } | null = null;
   private gumPointer: number | null = null;
+  private gumGeraakt = new Map<string, Konva.Group>();
   private knijp: { id: string; p1: Punt; p2: Punt; x: number; y: number; sx: number; sy: number; rot: number } | null = null;
 
   constructor(private container: HTMLDivElement, protected editor: Editor, protected assets: RenderCtx, protected opties: ControllerOpties = {}) {
@@ -97,11 +98,25 @@ export class CanvasController {
     this.streek?.lijn.destroy();
     this.streek = null;
     this.gumPointer = null;
+    this.gumHerstel();
     this.ui.batchDraw();
   }
 
+  private gumHerstel(): void {
+    for (const g of this.gumGeraakt.values()) g.show();
+    this.gumGeraakt.clear();
+    this.content.batchDraw();
+  }
+
   private beeindigStreek(pointerId: number, commit: boolean): void {
-    if (this.gumPointer === pointerId) { this.gumPointer = null; return; }
+    if (this.gumPointer === pointerId) {
+      this.gumPointer = null;
+      if (!commit) { this.gumHerstel(); return; }
+      const ids = [...this.gumGeraakt.keys()];
+      this.gumGeraakt.clear();
+      this.editor.removeMany(ids);
+      return;
+    }
     if (!this.streek || this.streek.pointerId !== pointerId) return;
     const { lijn, punten } = this.streek;
     this.streek = null;
@@ -116,7 +131,10 @@ export class CanvasController {
     const pos = this.stage.getPointerPosition();
     const shape = pos ? this.stage.getIntersection(pos) : null;
     const n = shape ? this.elementVan(shape) : undefined;
-    if (n?.el.type === 'tekening') this.editor.remove(n.el.id);
+    if (n?.el.type !== 'tekening' || this.gumGeraakt.has(n.el.id)) return;
+    n.group.hide();
+    this.gumGeraakt.set(n.el.id, n.group);
+    this.content.batchDraw();
   }
 
   group(id: string): Konva.Group | undefined { return this.nodes.get(id)?.group; }
@@ -135,13 +153,23 @@ export class CanvasController {
     const verborgen = this.content.find('.leeg-vak').filter((n) => n.visible());
     verborgen.forEach((n) => n.hide());
     this.ui.hide();
+    const gefilterd = this.content.find('Image').filter((n) => (n as Konva.Image).filters()?.length) as Konva.Image[];
+    for (const n of gefilterd) n.cache({ pixelRatio: this.cachePixelRatio(n, pixelRatio) });
     try {
       return this.stage.toDataURL({ x: this.stage.x(), y: this.stage.y(), width: this.maat.breedte * s, height: this.maat.hoogte * s, pixelRatio: pixelRatio / s, mimeType: 'image/png' });
     } finally {
+      for (const n of gefilterd) if (n.getStage()) n.cache({ pixelRatio: 1 });
       verborgen.forEach((n) => n.show());
       this.ui.show();
       this.stage.batchDraw();
     }
+  }
+
+  // Pixels per elementeenheid in de export, begrensd zodat de cache hooguit 4096 px lang wordt.
+  private cachePixelRatio(n: Konva.Image, pixelRatio: number): number {
+    const schaal = Math.abs(n.getAbsoluteScale().x) / this.stage.scaleX();
+    const lang = Math.max(n.width(), n.height()) || 1;
+    return Math.max(1, Math.min(pixelRatio * schaal, 4096 / lang));
   }
 
   protected sync(s: EditorState): void {
