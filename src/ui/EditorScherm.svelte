@@ -3,6 +3,7 @@
   import type { Collage, Element, FotoElement, Uitsnede } from '../document/types';
   import Icon from './Icon.svelte';
   import BijsnijDialoog from './BijsnijDialoog.svelte';
+  import ExportDialoog from './ExportDialoog.svelte';
   import { maakVorm } from '../document/create';
   import { createEditor } from '../editor/store';
   import { CanvasController } from '../editor/canvas';
@@ -36,6 +37,7 @@
   let paneel = $state<Paneel | null>(untrack(() => startPakket) ? 'stickers' : null);
   let toonOpdracht = $state(true);
   let vraagTerug = $state(false);
+  let toonExport = $state(false);
 
   const geselecteerd = $derived($editorState.collage.elementen.find((e) => e.id === $editorState.selectedId) ?? null);
   const PANEEL_VOOR: Record<Element['type'], Paneel | null> = { foto: 'foto', tekst: 'tekst', sticker: 'stickers', vorm: 'vormen', tekening: null };
@@ -105,6 +107,7 @@
 
   async function opDrop(e: DragEvent) {
     e.preventDefault();
+    if (bijsnijden || toonExport) return;
     if (!e.dataTransfer) return;
     const opCanvas = (e.target as HTMLElement | null)?.closest?.('#canvas-vlak');
     const positie = opCanvas ? controller?.naarCanvas(e.clientX, e.clientY) : undefined;
@@ -112,6 +115,7 @@
   }
 
   async function opPlak(e: ClipboardEvent) {
+    if (bijsnijden || toonExport) return;
     if ((e.target as HTMLElement | null)?.closest?.('input, textarea, [contenteditable]')) return;
     const cd = e.clipboardData;
     if (!cd || !(cd.files.length || cd.types.includes('text/uri-list'))) return;
@@ -120,7 +124,7 @@
   }
 
   function opToets(e: KeyboardEvent) {
-    if (bijsnijden) return;
+    if (bijsnijden || toonExport) return;
     if ((e.target as HTMLElement).closest('input, textarea, [contenteditable]')) return;
     const actie = toetsNaarActie(e);
     if (!actie) return;
@@ -148,6 +152,7 @@
       onTerug={() => (vraagTerug = true)}
       onOngedaan={() => editor.undo()}
       onOpnieuw={() => editor.redo()}
+      onBewaar={() => { editor.select(null); toonExport = true; }}
     />
   </div>
   {#if opdracht && toonOpdracht}
@@ -186,6 +191,10 @@
       { label: 'Stoppen', gevaar: true, actie: onTerug },
     ]}
   />
+{/if}
+
+{#if toonExport && controller}
+  <ExportDialoog {controller} collage={$editorState.collage} onSluit={() => (toonExport = false)} />
 {/if}
 
 {#if bijsnijden}

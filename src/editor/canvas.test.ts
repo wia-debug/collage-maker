@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import Konva from 'konva';
 import { CanvasController } from './canvas';
 import { createEditor } from './store';
-import { maakVorm, nieuweCollage } from '../document/create';
+import { maakFoto, maakVorm, nieuweCollage } from '../document/create';
 
 const leeg = { image: () => undefined };
 let ctrl: CanvasController | null = null;
@@ -317,5 +317,35 @@ describe('CanvasController', () => {
       ctrl.stage.fire('pointerup', ev(1));
       expect(editor.get().collage.elementen.map((e) => e.id)).toEqual([v.id]);
     });
+  });
+
+  async function pixel(url: string, x: number, y: number) {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const c = document.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    const ctx = c.getContext('2d')!;
+    ctx.drawImage(img, 0, 0);
+    return { w: img.width, h: img.height, rgb: [...ctx.getImageData(x, y, 1, 1).data.slice(0, 3)] };
+  }
+
+  it('exportPng: exact canvasformaat, zonder selectie en zonder lege vakken', async () => {
+    const { editor, ctrl } = opzet();
+    editor.add(maakFoto({ x: 600, y: 600, breedte: 800, hoogte: 800, assetId: null }));
+    expect(editor.get().selectedId).not.toBeNull();
+    const url = ctrl.exportPng(1);
+    const p = await pixel(url, 600, 600);
+    expect(Math.abs(p.w - 1200)).toBeLessThanOrEqual(1);
+    expect(Math.abs(p.h - 1200)).toBeLessThanOrEqual(1);
+    expect(p.rgb).toEqual([255, 255, 255]);
+    expect(p.rgb).toEqual((await pixel(url, 210, 210)).rgb);
+    expect(ctrl.stage.findOne('Transformer')!.isVisible()).toBe(true);
+    expect(ctrl.stage.findOne('.leeg-vak')!.isVisible()).toBe(true);
+  });
+
+  it('exportPng met pixelRatio 2 verdubbelt de maat', async () => {
+    const { ctrl } = opzet();
+    expect(Math.abs((await pixel(ctrl.exportPng(2), 0, 0)).w - 2400)).toBeLessThanOrEqual(1);
   });
 });

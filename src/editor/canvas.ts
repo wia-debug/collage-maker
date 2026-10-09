@@ -130,6 +130,20 @@ export class CanvasController {
     this.stage.destroy();
   }
 
+  exportPng(pixelRatio = 2): string {
+    const s = this.stage.scaleX();
+    const verborgen = this.content.find('.leeg-vak').filter((n) => n.visible());
+    verborgen.forEach((n) => n.hide());
+    this.ui.hide();
+    try {
+      return this.stage.toDataURL({ x: this.stage.x(), y: this.stage.y(), width: this.maat.breedte * s, height: this.maat.hoogte * s, pixelRatio: pixelRatio / s, mimeType: 'image/png' });
+    } finally {
+      verborgen.forEach((n) => n.show());
+      this.ui.show();
+      this.stage.batchDraw();
+    }
+  }
+
   protected sync(s: EditorState): void {
     const c = s.collage;
     if (c.formaat !== this.formaat) {
