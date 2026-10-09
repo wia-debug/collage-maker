@@ -37,7 +37,7 @@ export function startAutosave(o: { state: Readable<EditorState>; bewaar: (c: Col
         o.onFout?.(e);
       }
       // Tijdens het bewaren kan de toestand veranderd zijn (bijvoorbeeld ongedaan maken).
-      if (!gestopt && !timer && huidig !== laatstBewaard && laatstBewaard !== c) plan();
+      if (laatstBewaard === c && !gestopt && !timer && huidig !== laatstBewaard) plan();
     });
     return keten;
   }

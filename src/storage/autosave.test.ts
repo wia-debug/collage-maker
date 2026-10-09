@@ -125,6 +125,31 @@ describe('autosave', () => {
     await a.stop();
   });
 
+  it('een blijvende fout geeft geen eindeloze nieuwe pogingen', async () => {
+    const c0 = nieuweCollage('vierkant');
+    const state = writable(toestand(c0));
+    let keer = 0, fouten = 0;
+    const a = startAutosave({ state, wacht: 10, onFout: () => { fouten++; }, bewaar: async () => { keer++; throw new Error('altijd mis'); } });
+    state.set(toestand({ ...c0, naam: 'x' }));
+    await new Promise((r) => setTimeout(r, 200));
+    expect(keer).toBe(1);
+    expect(fouten).toBe(1);
+    await a.stop();
+  });
+
+  it('ongedaan maken tijdens het bewaren wordt vanzelf bewaard, zonder flush of stop', async () => {
+    const c0 = nieuweCollage('vierkant');
+    const state = writable(toestand(c0));
+    const bewaard: string[] = [];
+    const a = startAutosave({ state, wacht: 10, bewaar: async (c) => { await new Promise((r) => setTimeout(r, 40)); bewaard.push(c.naam); } });
+    state.set(toestand({ ...c0, naam: 'c1' }));
+    await new Promise((r) => setTimeout(r, 30));
+    state.set(toestand(c0));
+    await new Promise((r) => setTimeout(r, 250));
+    expect(bewaard).toEqual(['c1', c0.naam]);
+    await a.stop();
+  });
+
   it('isVolFout herkent ook een ingepakte Dexie-fout', () => {
     expect(isVolFout({ name: 'AbortError', inner: { name: 'QuotaExceededError' } })).toBe(true);
     expect(isVolFout(new Error('anders'))).toBe(false);
