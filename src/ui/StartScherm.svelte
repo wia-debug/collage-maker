@@ -7,13 +7,21 @@
   import { nieuweCollage } from '../document/create';
   import type { Collage, Formaat } from '../document/types';
 
-  let { onStart }: { onStart: (c: Collage, opdracht?: string, pakket?: string) => void } = $props();
+  import type { Profiel } from '../storage/profielen';
+  let { onStart, profiel = null, onWissel }: { onStart: (c: Collage, opdracht?: string, pakket?: string) => void; profiel?: Profiel | null; onWissel?: () => void } = $props();
   let stap = $state<'menu' | 'formaat' | 'templates' | 'uitdagingen'>('menu');
   const formaten = Object.entries(FORMATEN) as [Formaat, (typeof FORMATEN)[Formaat]][];
 </script>
 
 <main class="start">
   <h1>Collagemaker</h1>
+  {#if profiel}
+    <div class="profiel">
+      <span class="avatar" style:--kleur={profiel.kleur}><Icon name={profiel.symbool} size={28} /></span>
+      <strong>{profiel.naam}</strong>
+      {#if onWissel}<button id="knop-wissel" onclick={onWissel}><Icon name="users" /> Wissel</button>{/if}
+    </div>
+  {/if}
   {#if stap === 'menu'}
     <div class="kaarten">
       <button id="start-nieuw" class="kaart" style:--kleur="var(--koraal)" onclick={() => (stap = 'formaat')}>
@@ -49,6 +57,9 @@
 </main>
 
 <style>
+  .profiel { display: flex; align-items: center; gap: 10px; font-size: 1.2rem; }
+  .profiel .avatar { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--kleur); color: #fff; }
+  .profiel button { padding: 0 16px; }
   .start { min-height: 100dvh; padding: max(24px, env(safe-area-inset-top)) 24px 24px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 16px; }
   h1 { font-size: clamp(2rem, 6vw, 3.5rem); color: var(--koraal); margin-top: 16px; }
   .kaarten { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; width: min(960px, 100%); }

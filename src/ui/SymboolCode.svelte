@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
+  import { SYMBOOL_NAMEN } from '../storage/profielen';
   let { titel, symbolen, lengte = 3, fout = '', onKlaar }: { titel: string; symbolen: string[]; lengte?: number; fout?: string; onKlaar: (code: string[]) => void } = $props();
   let code = $state<string[]>([]);
 
@@ -23,7 +24,7 @@
   {#if fout}<p class="fout" role="alert">{fout}</p>{/if}
   <div class="toetsen" style:--kolommen={symbolen.length > 9 ? 4 : 3}>
     {#each symbolen as s}
-      <button id="symbool-{s}" aria-label={s} onclick={() => tik(s)}><Icon name={s} size={44} /></button>
+      <button id="symbool-{s}" aria-label={SYMBOOL_NAMEN[s] ?? s} onclick={() => tik(s)}><Icon name={s} size={44} /></button>
     {/each}
   </div>
   <button id="symbool-terug" aria-label="Wis" onclick={wis}><Icon name="backspace" /></button>

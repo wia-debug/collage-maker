@@ -8,6 +8,10 @@ export interface Profiel { id: string; naam: string; symbool: string; kleur: str
 export const PROFIEL_SYMBOLEN = ['paw-print', 'rocket', 'soccer-ball', 'leaf', 'cake', 'tree', 'pizza', 'car', 'star', 'heart', 'cloud', 'drop'];
 export const PIN_SYMBOLEN = ['star', 'heart', 'cloud', 'drop', 'leaf', 'rocket', 'cake', 'car', 'pizza'];
 export const PIN_LENGTE = 3;
+export const SYMBOOL_NAMEN: Record<string, string> = {
+  star: 'ster', heart: 'hart', cloud: 'wolk', drop: 'druppel', leaf: 'blad', rocket: 'raket',
+  cake: 'taart', car: 'auto', pizza: 'pizza', 'paw-print': 'pootje', 'soccer-ball': 'voetbal', tree: 'boom',
+};
 const PIN_ITERATIES = 20_000;
 
 const pinTekst = (pin: string[]): string => pin.join('|');

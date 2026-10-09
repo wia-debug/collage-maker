@@ -45,9 +45,15 @@ export const TOURS: Record<TourId, DriveStep[]> = {
 
 const SLEUTEL = 'collage-tours-gezien';
 
-function gelezen(): string[] {
+let profielSleutel: string | null = null;
+
+export function zetTourProfiel(id: string | null): void {
+  profielSleutel = id ? `${SLEUTEL}:${id}` : null;
+}
+
+function gelezen(sleutel: string): string[] {
   try {
-    const v = JSON.parse(localStorage.getItem(SLEUTEL) ?? '[]');
+    const v = JSON.parse(localStorage.getItem(sleutel) ?? '[]');
     return Array.isArray(v) ? v : [];
   } catch {
     return [];
@@ -55,12 +61,13 @@ function gelezen(): string[] {
 }
 
 export function tourGezien(id: TourId): boolean {
-  return gelezen().includes(id);
+  return gelezen(SLEUTEL).includes(id) || (profielSleutel !== null && gelezen(profielSleutel).includes(id));
 }
 
 export function markeerGezien(id: TourId): void {
+  const sleutel = profielSleutel ?? SLEUTEL;
   try {
-    localStorage.setItem(SLEUTEL, JSON.stringify([...new Set([...gelezen(), id])]));
+    localStorage.setItem(sleutel, JSON.stringify([...new Set([...gelezen(sleutel), id])]));
   } catch { /* opslag geblokkeerd: tour komt dan opnieuw */ }
 }
 
