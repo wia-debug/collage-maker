@@ -65,6 +65,6 @@ describe('.collage-bestand', () => {
     let start = -1;
     for (let i = 0; i < bytes.length - naam.length && start < 0; i++) if (naam.every((b, k) => bytes[i + k] === b)) start = i;
     for (let i = start + naam.length; i < start + naam.length + 40; i++) bytes[i] ^= 0xff;
-    expect(await code(vanBestand(new Blob([bytes])))).toBe('ongeldig');
+    expect(await code(vanBestand(new Blob([bytes as BlobPart])))).toBe('ongeldig');
   });
 });
