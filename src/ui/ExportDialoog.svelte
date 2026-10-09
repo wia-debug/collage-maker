@@ -5,18 +5,22 @@
   import { maakPdf } from '../export/pdf';
   import { bestandsnaam, bewaarBestand, dataUrlNaarBlob } from '../export/bewaar';
   import { toon } from './toast';
+  import type { AssetStore } from '../assets/store';
+  import { naarBestand } from '../storage/bestand';
 
-  let { controller, collage, onSluit }: { controller: CanvasController; collage: Collage; onSluit: () => void } = $props();
-  let klaar = $state.raw<{ blob: Blob; naam: string; voorbeeld: string } | null>(null);
+  let { controller, collage, assets, onSluit, onBestandBewaard }: { controller: CanvasController; collage: Collage; assets: AssetStore; onSluit: () => void; onBestandBewaard?: () => void } = $props();
+  let klaar = $state.raw<{ blob: Blob; naam: string; voorbeeld: string; soort: 'png' | 'pdf' | 'collage' } | null>(null);
   let bezig = $state(false);
   let bewaarBezig = $state(false);
 
-  async function maak(soort: 'png' | 'pdf') {
+  async function maak(soort: 'png' | 'pdf' | 'collage') {
     bezig = true;
     try {
-      const png = controller.exportPng(2);
-      const blob = soort === 'png' ? await dataUrlNaarBlob(png) : await maakPdf(png, collage.formaat);
-      klaar = { blob, naam: bestandsnaam(collage.naam, soort), voorbeeld: png };
+      const png = controller.exportPng(soort === 'collage' ? 0.5 : 2);
+      const blob = soort === 'png' ? await dataUrlNaarBlob(png)
+        : soort === 'pdf' ? await maakPdf(png, collage.formaat)
+        : await naarBestand(collage, assets, await dataUrlNaarBlob(png));
+      klaar = { blob, naam: bestandsnaam(collage.naam, soort), voorbeeld: png, soort };
     } catch {
       toon('Bewaren lukte niet. Probeer het nog eens.', 'warning');
     } finally {
@@ -30,7 +34,11 @@
     bewaarBezig = true;
     try {
       const r = await bewaarBestand(klaar.blob, klaar.naam);
-      if (r !== 'geannuleerd') { toon('Bewaard!', 'check-circle'); onSluit(); }
+      if (r !== 'geannuleerd') {
+        if (klaar.soort === 'collage') onBestandBewaard?.();
+        toon('Bewaard!', 'check-circle');
+        onSluit();
+      }
     } catch {
       toon('Bewaren lukte niet. Probeer het nog eens.', 'warning');
     } finally {
@@ -46,6 +54,7 @@
       <div class="keuze">
         <button id="export-png" disabled={bezig} onclick={() => maak('png')}><Icon name="file-png" size={56} /><span>Als foto</span></button>
         <button id="export-pdf" disabled={bezig} onclick={() => maak('pdf')}><Icon name="file-pdf" size={56} /><span>Als PDF</span></button>
+        <button id="export-collage" disabled={bezig} onclick={() => maak('collage')}><Icon name="floppy-disk" size={56} /><span>Om verder te werken</span></button>
       </div>
       {#if bezig}<p>Even geduld...</p>{/if}
     {:else}
@@ -59,8 +68,8 @@
 <style>
   .scherm { position: fixed; inset: 0; background: rgba(45, 42, 50, 0.45); display: grid; place-items: center; z-index: 90; padding: 16px; }
   .dialoog { background: var(--paneel); border-radius: 28px; padding: 24px; width: min(520px, 100%); box-shadow: var(--schaduw); display: grid; gap: 14px; }
-  .keuze { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .keuze button { flex-direction: column; min-height: 150px; background: var(--creme); font-size: 1.2rem; }
+  .keuze { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .keuze button { flex-direction: column; min-height: 140px; background: var(--creme); font-size: 1.2rem; }
   img { width: 100%; max-height: 50dvh; object-fit: contain; background: var(--werkvlak); border-radius: 16px; }
   .breed { width: 100%; }
 </style>

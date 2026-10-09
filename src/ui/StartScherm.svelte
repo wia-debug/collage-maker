@@ -10,11 +10,12 @@
   import type { Profiel } from '../storage/profielen';
   import MijnCollages from './MijnCollages.svelte';
   import type { CollageSamenvatting } from '../storage/collages';
-  let { onStart, profiel = null, onWissel, collages = [], onOpen, onWis }: {
+  let { onStart, profiel = null, onWissel, collages = [], onOpen, onWis, onOpenBestand }: {
     onStart: (c: Collage, opdracht?: string, pakket?: string) => void; profiel?: Profiel | null; onWissel?: () => void;
-    collages?: CollageSamenvatting[]; onOpen?: (id: string) => void; onWis?: (id: string) => void;
+    collages?: CollageSamenvatting[]; onOpen?: (id: string) => void; onWis?: (id: string) => void; onOpenBestand?: (f: File) => void;
   } = $props();
   let stap = $state<'menu' | 'formaat' | 'templates' | 'uitdagingen'>('menu');
+  let bestandInput: HTMLInputElement;
   const formaten = Object.entries(FORMATEN) as [Formaat, (typeof FORMATEN)[Formaat]][];
 </script>
 
@@ -38,6 +39,11 @@
       <button id="start-uitdaging" class="kaart" style:--kleur="var(--lavendel)" onclick={() => (stap = 'uitdagingen')}>
         <Icon name="trophy" size={64} /><span>Uitdaging</span>
       </button>
+      {#if onOpenBestand}
+        <button id="start-open" class="kaart" style:--kleur="var(--mint)" onclick={() => { bestandInput.value = ''; bestandInput.click(); }}>
+          <Icon name="folder-open" size={64} /><span>Open bestand</span>
+        </button>
+      {/if}
     </div>
     {#if collages.length && onOpen && onWis}<MijnCollages {collages} {onOpen} {onWis} />{/if}
   {:else if stap === 'formaat'}
@@ -61,6 +67,8 @@
     <UitdagingKiezer onKies={(u) => onStart(template(u.templateId).maak(), u.opdracht, u.pakket)} />
   {/if}
 </main>
+<input id="bestand-input" class="visueel-verborgen" type="file" accept=".collage,application/zip" bind:this={bestandInput}
+  onchange={() => { const f = bestandInput.files?.[0]; if (f && onOpenBestand) onOpenBestand(f); }} />
 
 <style>
   .profiel { display: flex; align-items: center; gap: 10px; font-size: 1.2rem; }

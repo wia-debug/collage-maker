@@ -2,7 +2,7 @@ export async function dataUrlNaarBlob(url: string): Promise<Blob> {
   return (await fetch(url)).blob();
 }
 
-export function bestandsnaam(naam: string, ext: 'png' | 'pdf', datum = new Date()): string {
+export function bestandsnaam(naam: string, ext: 'png' | 'pdf' | 'collage', datum = new Date()): string {
   const slug = naam.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'collage';
   const d = `${datum.getFullYear()}-${String(datum.getMonth() + 1).padStart(2, '0')}-${String(datum.getDate()).padStart(2, '0')}`;
   return `${slug}-${d}.${ext}`;

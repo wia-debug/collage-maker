@@ -32,6 +32,7 @@
   import { bewaarCollage } from '../storage/collages';
   import { isVolFout, startAutosave } from '../storage/autosave';
   import { maakVoorbeeld } from '../export/voorbeeld';
+  import { startHerinnering } from '../storage/herinnering';
   import type { Toestel } from '../storage/instellingen';
 
   let { collage, opdracht = null, startPakket = null, toestel, vooraf, onTerug }: { collage: Collage; opdracht?: string | null; startPakket?: string | null; toestel: Toestel; vooraf?: AssetStore; onTerug: () => void } = $props();
@@ -62,6 +63,8 @@
     }
     onTerug();
   }
+
+  function openBewaren() { selectieVoorExport = editor.get().selectedId; editor.select(null); toonExport = true; }
 
   function terug() {
     if (toestel === 'chromebook' && gewijzigdSindsBestand()) { vraagTerug = true; return; }
@@ -108,7 +111,11 @@
     window.addEventListener('beforeunload', voorUitladen);
     document.addEventListener('visibilitychange', opVerbergen);
     window.addEventListener('pagehide', opPagehide);
+    const stopHerinnering = toestel === 'chromebook'
+      ? startHerinnering({ interval: 10 * 60_000, moet: gewijzigdSindsBestand, toon: () => toon('Vergeet niet je collage als bestand te bewaren.', 'info') })
+      : () => {};
     return () => {
+      stopHerinnering();
       window.removeEventListener('beforeunload', voorUitladen);
       document.removeEventListener('visibilitychange', opVerbergen);
       window.removeEventListener('pagehide', opPagehide);
@@ -224,7 +231,7 @@
       onOngedaan={() => editor.undo()}
       onOpnieuw={() => editor.redo()}
       onHelp={() => startTour(paneel ?? 'editor')}
-      onBewaar={() => { selectieVoorExport = editor.get().selectedId; editor.select(null); toonExport = true; }}
+      onBewaar={openBewaren}
     />
   </div>
   {#if opdracht && toonOpdracht}
@@ -259,14 +266,15 @@
     titel="Stoppen met deze collage?"
     tekst="Op deze Chromebook wordt alles gewist bij het uitloggen. Bewaar je collage als bestand als je later verder wil werken."
     knoppen={[
-      { label: 'Verder werken', hoofd: true, actie: () => (vraagTerug = false) },
+      { label: 'Bewaar als bestand', hoofd: true, actie: () => { vraagTerug = false; openBewaren(); } },
+      { label: 'Verder werken', actie: () => (vraagTerug = false) },
       { label: 'Stoppen', gevaar: true, actie: () => { vraagTerug = false; void afsluiten(); } },
     ]}
   />
 {/if}
 
 {#if toonExport && controller}
-  <ExportDialoog {controller} collage={$editorState.collage} onSluit={sluitExport} />
+  <ExportDialoog {controller} collage={$editorState.collage} {assets} onBestandBewaard={() => (laatsteBestand = editor.get().collage)} onSluit={sluitExport} />
 {/if}
 
 {#if bijsnijden}

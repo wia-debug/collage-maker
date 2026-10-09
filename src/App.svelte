@@ -15,6 +15,9 @@
   import { AssetStore } from './assets/store';
   import { laadCollage, lijstCollages, vulAssets, wisCollages, type CollageSamenvatting } from './storage/collages';
   import { toon } from './ui/toast';
+  import { vanBestand } from './storage/bestand';
+  import { CollageFout, FOUTTEKST_BESTAND } from './document/validatie';
+  import { kopieVan } from './document/create';
 
   let editorAssets = $state.raw<AssetStore | undefined>(undefined);
   let collages = $state.raw<CollageSamenvatting[]>([]);
@@ -33,6 +36,20 @@
       collage = r.collage;
     } catch {
       toon('Deze collage kan ik niet openen.', 'warning');
+    }
+  }
+
+  async function openBestand(f: File) {
+    try {
+      const { collage: c, blobs } = await vanBestand(f);
+      const a = new AssetStore();
+      await vulAssets(a, blobs);
+      editorAssets = a;
+      opdracht = null;
+      pakket = null;
+      collage = kopieVan(c, profiel?.id ?? null);
+    } catch (e) {
+      toon(e instanceof CollageFout ? FOUTTEKST_BESTAND[e.code] : 'Dit bestand kan ik niet openen.', 'warning');
     }
   }
 
@@ -75,7 +92,7 @@
 {:else if collage}
   <EditorScherm {collage} {opdracht} startPakket={pakket} toestel={inst.toestel} vooraf={editorAssets} onTerug={terug} />
 {:else}
-  <StartScherm onStart={start} {profiel} onWissel={profielenActief(inst) ? wissel : undefined} {collages} onOpen={open} onWis={wis} />
+  <StartScherm onStart={start} {profiel} onWissel={profielenActief(inst) ? wissel : undefined} {collages} onOpen={open} onWis={wis} onOpenBestand={inst.toestel === 'ipad' ? undefined : openBestand} />
 {/if}
 <Toast />
 
