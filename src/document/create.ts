@@ -57,3 +57,8 @@ export function maakTekening(punten: number[], gereedschap: TekenGereedschap, kl
   const n = normaliseerStreek(punten, dikte);
   return { ...basis(n.x, n.y, n.breedte, n.hoogte), type: 'tekening', gereedschap, punten: n.punten, kleur, dikte };
 }
+
+export function kopieVan(c: Collage, profielId: string | null): Collage {
+  const nu = Date.now();
+  return { ...structuredClone(c), id: nieuwId(), profielId, aangemaakt: nu, gewijzigd: nu };
+}
