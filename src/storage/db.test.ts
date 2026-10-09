@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { ruimTestDbOp } from './testhulp';
 import { maakDb, type CollageDb } from './db';
 import { controleerCode, maakHash } from './hash';
 import { leesInstellingen, profielenActief, schrijfInstellingen } from './instellingen';
@@ -6,7 +7,7 @@ import { nieuwId } from '../document/create';
 
 let db: CollageDb;
 beforeEach(() => { db = maakDb(`test-${nieuwId()}`); });
-afterEach(async () => { db.close(); await db.delete(); });
+afterEach(() => ruimTestDbOp(db));
 
 describe('hash', () => {
   it('controleert de juiste code en weigert een andere', async () => {

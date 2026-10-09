@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { CollageFout } from '../document/validatie';
+import { ruimTestDbOp } from './testhulp';
 import { maakDb, type CollageDb } from './db';
 import { bewaarCollage, gebruikteAssets, laadCollage, lijstCollages, vulAssets, wisCollages } from './collages';
 import { kopieVan, maakFoto, nieuweCollage, nieuwId } from '../document/create';
@@ -8,7 +9,7 @@ import type { Collage } from '../document/types';
 
 let db: CollageDb;
 beforeEach(() => { db = maakDb(`test-${nieuwId()}`); });
-afterEach(async () => { db.close(); await db.delete(); });
+afterEach(() => ruimTestDbOp(db));
 
 async function png(): Promise<Blob> {
   const c = new OffscreenCanvas(4, 4);
