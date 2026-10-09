@@ -8,7 +8,7 @@ import type { Collage } from '../document/types';
 
 let db: CollageDb;
 beforeEach(() => { db = maakDb(`test-${nieuwId()}`); });
-afterEach(async () => { await db.delete(); });
+afterEach(async () => { db.close(); await db.delete(); });
 
 async function png(): Promise<Blob> {
   const c = new OffscreenCanvas(4, 4);

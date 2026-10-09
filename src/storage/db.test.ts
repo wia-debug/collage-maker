@@ -6,7 +6,7 @@ import { nieuwId } from '../document/create';
 
 let db: CollageDb;
 beforeEach(() => { db = maakDb(`test-${nieuwId()}`); });
-afterEach(async () => { await db.delete(); });
+afterEach(async () => { db.close(); await db.delete(); });
 
 describe('hash', () => {
   it('controleert de juiste code en weigert een andere', async () => {
