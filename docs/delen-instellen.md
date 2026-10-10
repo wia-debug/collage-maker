@@ -4,14 +4,16 @@ Rechtstreeks delen werkt zonder eigen server (via de publieke PeerJS-server). De
 
 De publieke PeerJS-server ziet de IP-adressen van de toestellen en de deelcodes. De collage zelf gaat versleuteld rechtstreeks van toestel naar toestel en komt niet langs die server.
 
+De app zelf staat op https://collagemaker.aaronwillaert.workers.dev (Cloudflare Workers, statische bestanden). Een nieuwe versie zet je online met `npm run app:deploy`.
+
+0. Zet R2 aan in het Cloudflare-dashboard (R2 Object Storage). Zonder R2 kan de relay niet werken.
 1. Log in: `npx wrangler login`
 2. Maak de opslag: `npx wrangler r2 bucket create collagemaker-relay`
 3. Laat alles na 1 dag wissen: `npx wrangler r2 bucket lifecycle add collagemaker-relay verval-na-1-dag --expire-days 1`
    (of in het Cloudflare-dashboard: R2 → collagemaker-relay → Settings → Object lifecycle rules)
-4. Zet in `worker/wrangler.toml` bij `TOEGESTANE_ORIGIN` het adres van de app, precies zoals in de adresbalk en zonder `/` op het einde (bijvoorbeeld `https://collagemaker.pages.dev`).
+4. Zet in `worker/wrangler.toml` bij `TOEGESTANE_ORIGIN` het adres van de app, precies zoals in de adresbalk en zonder `/` op het einde (nu al ingevuld: `https://collagemaker.aaronwillaert.workers.dev`).
 5. Zet de Worker online: `npm run relay:deploy`. Noteer het adres (bijvoorbeeld `https://collagemaker-relay.<jouw-naam>.workers.dev`).
-6. Maak in de projectmap een bestand `.env.production` met `VITE_RELAY_URL=<dat adres>` en bouw de app opnieuw (`npm run build`).
-   Bouwt Cloudflare Pages de app voor je? Zet `VITE_RELAY_URL` dan bij de instellingen van het Pages-project (Settings → Environment variables) in plaats van in `.env.production`, en bouw opnieuw.
+6. Maak in de projectmap een bestand `.env.production` met `VITE_RELAY_URL=<dat adres>` en zet de app opnieuw online (`npm run app:deploy`).
 7. Kies in het leerkrachtmenu de regel voor delen via de server (standaard: "Mij vragen").
    Op Chromebooks wordt de leerkrachtcode bij elke aanmelding teruggezet op `000000`. Kies daar dus "Nooit" of "Kind vragen".
 

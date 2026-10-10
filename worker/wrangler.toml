@@ -7,7 +7,7 @@ binding = "BAK"
 bucket_name = "collagemaker-relay"
 
 [vars]
-TOEGESTANE_ORIGIN = "https://collagemaker.pages.dev"
+TOEGESTANE_ORIGIN = "https://collagemaker.aaronwillaert.workers.dev"
 
 [[ratelimits]]
 name = "LIMIET"
