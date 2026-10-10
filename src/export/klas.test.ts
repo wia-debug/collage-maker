@@ -3,6 +3,7 @@ import JSZip from 'jszip';
 import { klasBestandsnaam, maakKlasPdf, maakKlasZip, zipNamen } from './klas';
 import { maakVorm, nieuweCollage } from '../document/create';
 import { naarBestand } from '../storage/bestand';
+import { FORMATEN } from '../document/formats';
 import type { InzendingRij } from '../storage/db';
 
 const rij = async (naam: string, formaat: 'vierkant' | 'a4-liggend' = 'vierkant'): Promise<InzendingRij> => {
@@ -13,6 +14,11 @@ const rij = async (naam: string, formaat: 'vierkant' | 'a4-liggend' = 'vierkant'
 describe('klas-export', () => {
   it('maakt unieke, veilige bestandsnamen', () => {
     expect(zipNamen(['Lies', 'lies', 'Lies', 'a/b', '  ', 'Omar'])).toEqual(['Lies.png', 'lies 2.png', 'Lies 3.png', 'a-b.png', 'collage.png', 'Omar.png']);
+  });
+  it('namen blijven uniek, ook als een kind al "Lies 2" heet', () => {
+    const uit = zipNamen(['Lies', 'Lies', 'Lies 2', 'lies 2']);
+    expect(uit.slice(0, 2)).toEqual(['Lies.png', 'Lies 2.png']);
+    expect(new Set(uit.map((n) => n.toLowerCase())).size).toBe(uit.length);
   });
   it('vervangt backslash in namen', () => {
     expect(zipNamen(['a\\b'])).toEqual(['a-b.png']);
@@ -31,5 +37,10 @@ describe('klas-export', () => {
     const pdf = await maakKlasPdf([await rij('Lies'), await rij('Omar', 'a4-liggend')]);
     const tekst = await pdf.text();
     expect((tekst.match(/\/Type \/Page\b/g) ?? []).length).toBe(2);
+  });
+  it('PDF bevat JPEG-beelden op schaal 1 (minder geheugen)', async () => {
+    const tekst = await (await maakKlasPdf([await rij('Lies')])).text();
+    expect(tekst).toContain('/DCTDecode');
+    expect(tekst).toContain(`/Width ${FORMATEN.vierkant.breedte}`);
   });
 });

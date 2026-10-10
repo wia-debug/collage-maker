@@ -10,13 +10,18 @@ import { dataUrlNaarBlob } from './bewaar';
 
 export function zipNamen(namen: string[]): string[] {
   const gezien = new Map<string, number>();
+  const gebruikt = new Set<string>();
   return namen.map((n) => {
     // eslint-disable-next-line no-control-regex
     const schoon = n.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '-').trim() || 'collage';
     const sleutel = schoon.toLocaleLowerCase('nl');
-    const aantal = (gezien.get(sleutel) ?? 0) + 1;
+    let aantal = gezien.get(sleutel) ?? 0;
+    let kandidaat: string;
+    // Tot de naam nog niet gebruikt is (ook niet door een kind dat echt "Lies 2" heet).
+    do { aantal++; kandidaat = aantal === 1 ? schoon : `${schoon} ${aantal}`; } while (gebruikt.has(kandidaat.toLocaleLowerCase('nl')));
     gezien.set(sleutel, aantal);
-    return `${aantal === 1 ? schoon : `${schoon} ${aantal}`}.png`;
+    gebruikt.add(kandidaat.toLocaleLowerCase('nl'));
+    return `${kandidaat}.png`;
   });
 }
 
@@ -30,6 +35,23 @@ export async function renderInzending(rij: InzendingRij, schaal = 2): Promise<{ 
   const assets = new AssetStore();
   await vulAssets(assets, blobs);
   return { png: await maakVoorbeeld(collage, assets, FORMATEN[collage.formaat].breedte * schaal), formaat: collage.formaat };
+}
+
+// PNG naar JPEG (witte achtergrond): veel kleiner in het geheugen bij een PDF van een hele klas.
+async function naarJpeg(png: string): Promise<string> {
+  const img = new Image();
+  img.src = png;
+  await img.decode();
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth;
+  c.height = img.naturalHeight;
+  const x = c.getContext('2d')!;
+  x.fillStyle = '#FFFFFF';
+  x.fillRect(0, 0, c.width, c.height);
+  x.drawImage(img, 0, 0);
+  const jpeg = c.toDataURL('image/jpeg', 0.85);
+  c.width = c.height = 0;
+  return jpeg;
 }
 
 type Voortgang = (klaar: number, totaal: number) => void;
@@ -49,7 +71,8 @@ export async function maakKlasPdf(rijen: InzendingRij[], voortgang?: Voortgang):
   let pdf: InstanceType<typeof jsPDF> | null = null;
   for (const [i, r] of rijen.entries()) {
     try {
-      const { png, formaat } = await renderInzending(r);
+      const { png, formaat } = await renderInzending(r, 1);
+      const jpeg = await naarJpeg(png);
       const f = FORMATEN[formaat];
       const orientation = f.breedte > f.hoogte ? 'landscape' : 'portrait';
       if (!pdf) pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
@@ -58,7 +81,7 @@ export async function maakKlasPdf(rijen: InzendingRij[], voortgang?: Voortgang):
       const marge = 10, naamVak = 14;
       const s = Math.min((pw - 2 * marge) / f.breedte, (ph - 2 * marge - naamVak) / f.hoogte);
       const w = f.breedte * s, h = f.hoogte * s;
-      pdf.addImage(png, 'PNG', (pw - w) / 2, marge, w, h, undefined, 'FAST');
+      pdf.addImage(jpeg, 'JPEG', (pw - w) / 2, marge, w, h, undefined, 'FAST');
       pdf.setFontSize(16);
       pdf.text(r.naam, pw / 2, marge + h + 9, { align: 'center' });
     } catch { /* kapotte inzending overslaan */ }

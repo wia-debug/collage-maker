@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte';
+  import { onDestroy, onMount, untrack } from 'svelte';
   import Icon from './Icon.svelte';
   import type { InzendingRij } from '../storage/db';
   import { renderInzending } from '../export/klas';
@@ -17,19 +17,31 @@
 
   const huidig = $derived(rijen[i]);
 
+  // Alleen de huidige en de volgende dia blijven in het geheugen (een klas kan veel collages hebben).
+  const teHouden = () => new Set([rijen[i]?.id, rijen[(i + 1) % rijen.length]?.id].filter((x): x is string => !!x));
+  const alleenTeHouden = (b: Record<string, string>) => {
+    const houd = teHouden();
+    return Object.fromEntries(Object.entries(b).filter(([k]) => houd.has(k)));
+  };
+
   async function zorgVoor(index: number) {
     const r = rijen[index];
     if (!r || beelden[r.id]) return;
     try {
       const { png } = await renderInzending(r, 1);
-      if (!weg) beelden = { ...beelden, [r.id]: png };
+      if (weg || !teHouden().has(r.id)) return;
+      beelden = { ...alleenTeHouden(beelden), [r.id]: png };
     } catch { /* toont dan de naam zonder beeld */ }
   }
   function ga(stap: number) { i = (i + stap + rijen.length) % rijen.length; }
 
   $effect(() => {
-    void zorgVoor(i);
-    void zorgVoor((i + 1) % rijen.length);
+    void i;
+    untrack(() => {
+      beelden = alleenTeHouden(beelden);
+      void zorgVoor(i);
+      void zorgVoor((i + 1) % rijen.length);
+    });
   });
   $effect(() => {
     clearTimeout(timer);
@@ -53,10 +65,21 @@
     if (Math.abs(dx) > 60) ga(dx < 0 ? 1 : -1);
   }
 
-  onMount(() => { void houder.requestFullscreen?.().catch(() => {}); });
+  // Verlaat de leerkracht het volledig scherm (bv. met Esc of de knop van de browser): diavoorstelling dicht.
+  let wasVolledig = false;
+  function volledigWissel() {
+    if (document.fullscreenElement) wasVolledig = true;
+    else if (wasVolledig) onSluit();
+  }
+
+  onMount(() => {
+    document.addEventListener('fullscreenchange', volledigWissel);
+    void houder.requestFullscreen?.().catch(() => {});
+  });
   onDestroy(() => {
     weg = true;
     clearTimeout(timer);
+    document.removeEventListener('fullscreenchange', volledigWissel);
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
   });
 </script>
