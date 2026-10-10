@@ -5,6 +5,8 @@
   import { maakPdf } from '../export/pdf';
   import { bestandsnaam, bewaarBestand, dataUrlNaarBlob } from '../export/bewaar';
   import { toon } from './toast';
+  import { speel } from '../feedback/geluid';
+  import { vier } from '../feedback/animatie';
   import type { AssetStore } from '../assets/store';
   import { naarBestand } from '../storage/bestand';
 
@@ -37,6 +39,7 @@
       if (r !== 'geannuleerd') {
         if (klaar.soort === 'collage') onBestandBewaard?.();
         toon('Bewaard!', 'check-circle');
+        speel('feest'); vier();
         onSluit();
       }
     } catch {

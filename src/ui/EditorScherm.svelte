@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount, untrack } from 'svelte';
+  import { speel } from '../feedback/geluid';
+  import { magAnimeren } from '../feedback/animatie';
   import type { Collage, Element, FotoElement, Uitsnede } from '../document/types';
   import Icon from './Icon.svelte';
   import BijsnijDialoog from './BijsnijDialoog.svelte';
@@ -106,9 +108,13 @@
     if (paneel !== 'tekenen') untrack(() => controller)?.setGereedschap('selecteer');
   });
 
+  let stopToe: () => void = () => {};
+  let stopWeg: () => void = () => {};
   onMount(async () => {
     await Promise.all([assets.preload(editor.get().collage), laadLettertypes()]);
     controller = new CanvasController(canvasEl, editor, assets, { onVakTik: (id) => kiesFoto(id) });
+    stopToe = editor.opToevoegen((el) => { speel('plop'); if (magAnimeren()) requestAnimationFrame(() => controller?.springOp(el.id)); });
+    stopWeg = editor.opWissen(() => speel('zoef'));
     if (import.meta.env.MODE === 'e2e') (window as any).__collage = { editor, assets, controller, maakVorm };
     if (!tourGezien('editor')) setTimeout(() => startTour('editor'), 300);
   });
@@ -133,7 +139,7 @@
       window.removeEventListener('pagehide', opPagehide);
     };
   });
-  onDestroy(() => { controller?.destroy(); void autosave.stop(); });
+  onDestroy(() => { stopToe(); stopWeg(); controller?.destroy(); void autosave.stop(); });
 
   let naamInvoer: { openen(tekst: string, id: string | null): void };
   function naamKlaar(t: string) {

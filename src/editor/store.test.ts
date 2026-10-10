@@ -152,3 +152,20 @@ describe('voorbeeld (live schuif)', () => {
     expect(ed.get().collage.elementen[0].x).toBe(100);
   });
 });
+
+describe('editor-store meldingen', () => {
+  it('meldt toevoegen en wissen, niet bij undo', () => {
+    const ed = createEditor(nieuweCollage('vierkant'));
+    const toe: string[] = []; let weg = 0;
+    ed.opToevoegen((el) => toe.push(el.id));
+    ed.opWissen(() => weg++);
+    const v = maakVorm({ x: 0, y: 0, vorm: 'ster', breedte: 10, hoogte: 10 });
+    ed.add(v);
+    ed.duplicate(v.id);
+    ed.remove(v.id);
+    ed.removeMany([]);
+    ed.undo(); ed.redo();
+    expect(toe).toHaveLength(2);
+    expect(weg).toBe(1);
+  });
+});

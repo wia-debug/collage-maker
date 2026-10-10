@@ -153,6 +153,17 @@
           {/each}
         </div>
       </section>
+      <section>
+        <h2>Geluid en beweging</h2>
+        <div class="rij">
+          <button id="geluid-aan" class:actief={inst.geluid} aria-pressed={inst.geluid} onclick={() => zet({ geluid: !inst.geluid })}>
+            <Icon name={inst.geluid ? 'speaker-high' : 'speaker-slash'} /> Geluid {inst.geluid ? 'aan' : 'uit'}
+          </button>
+          <button id="animatie-aan" class:actief={inst.animatie} aria-pressed={inst.animatie} onclick={() => zet({ animatie: !inst.animatie })}>
+            <Icon name="sparkle" /> Beweging {inst.animatie ? 'aan' : 'uit'}
+          </button>
+        </div>
+      </section>
       {#if profielenActief(inst)}
         <section>
           <h2>Profielen</h2>

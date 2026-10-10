@@ -35,9 +35,13 @@ export function createEditor(initial: Collage) {
 
   const els = () => history.present.elementen;
 
+  const toegevoegd = new Set<(el: Element) => void>();
+  const gewist = new Set<() => void>();
+
   function add(el: Element): void {
     selectedId = el.id;
     commit({ elementen: [...els(), el] });
+    for (const cb of toegevoegd) cb(el);
   }
 
   return {
@@ -59,12 +63,20 @@ export function createEditor(initial: Collage) {
     update(id: string, patch: Partial<Element>): void {
       commit({ elementen: els().map((e) => (e.id === id ? ({ ...e, ...patch } as Element) : e)) });
     },
-    remove(id: string): void { commit({ elementen: els().filter((e) => e.id !== id) }); },
+    remove(id: string): void {
+      const voor = els().length;
+      commit({ elementen: els().filter((e) => e.id !== id) });
+      if (els().length < voor) for (const cb of gewist) cb();
+    },
     removeMany(ids: string[]): void {
       if (!ids.length) return;
       const weg = new Set(ids);
+      const voor = els().length;
       commit({ elementen: els().filter((e) => !weg.has(e.id)) });
+      if (els().length < voor) for (const cb of gewist) cb();
     },
+    opToevoegen(cb: (el: Element) => void): () => void { toegevoegd.add(cb); return () => toegevoegd.delete(cb); },
+    opWissen(cb: () => void): () => void { gewist.add(cb); return () => gewist.delete(cb); },
     duplicate(id: string): void {
       const e = els().find((x) => x.id === id);
       if (!e) return;

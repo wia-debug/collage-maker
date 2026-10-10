@@ -146,6 +146,17 @@ export class CanvasController {
 
   group(id: string): Konva.Group | undefined { return this.nodes.get(id)?.group; }
 
+  springOp(id: string): void {
+    const n = this.nodes.get(id);
+    if (!n) return;
+    const sx = n.group.scaleX(), sy = n.group.scaleY();
+    n.group.scale({ x: sx * 0.8, y: sy * 0.8 });
+    new Konva.Tween({
+      node: n.group, duration: 0.15, scaleX: sx * 1.05, scaleY: sy * 1.05, easing: Konva.Easings.EaseOut,
+      onFinish: () => new Konva.Tween({ node: n.group, duration: 0.1, scaleX: sx, scaleY: sy, onFinish: () => this.transformer.forceUpdate() }).play(),
+    }).play();
+  }
+
   destroy(): void {
     this.stopSync();
     this.verwerpStreek();

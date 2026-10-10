@@ -30,7 +30,7 @@ describe('hash', () => {
 
 describe('instellingen', () => {
   it('standaard leeg', async () => {
-    expect(await leesInstellingen(db)).toEqual({ toestel: null, profielenAan: false, master: null, cloudDelen: 'leerkracht' });
+    expect(await leesInstellingen(db)).toEqual({ toestel: null, profielenAan: false, master: null, cloudDelen: 'leerkracht', geluid: true, animatie: true });
   });
   it('schrijven voegt samen en blijft bewaard', async () => {
     await schrijfInstellingen(db, { toestel: 'pc' });
@@ -46,7 +46,7 @@ describe('instellingen', () => {
     expect((await leesInstellingen(db)).cloudDelen).toBe('nooit');
   });
   it('profielenActief: iPad altijd, pc alleen als aan, chromebook nooit', () => {
-    const basis = { master: null, profielenAan: false, cloudDelen: 'leerkracht' as const };
+    const basis = { master: null, profielenAan: false, cloudDelen: 'leerkracht' as const, geluid: true, animatie: true };
     expect(profielenActief({ ...basis, toestel: 'ipad' })).toBe(true);
     expect(profielenActief({ ...basis, toestel: 'pc' })).toBe(false);
     expect(profielenActief({ ...basis, toestel: 'pc', profielenAan: true })).toBe(true);

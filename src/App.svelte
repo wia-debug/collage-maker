@@ -3,6 +3,9 @@
   import StartScherm from './ui/StartScherm.svelte';
   import EditorScherm from './ui/EditorScherm.svelte';
   import Toast from './ui/Toast.svelte';
+  import Confetti from './ui/Confetti.svelte';
+  import { ontgrendelGeluid, zetGeluid } from './feedback/geluid';
+  import { zetAnimatie } from './feedback/animatie';
   import OpruimDialoog from './ui/OpruimDialoog.svelte';
   import { teVragen } from './storage/opruimen';
   import LeerkrachtMenu from './ui/LeerkrachtMenu.svelte';
@@ -102,6 +105,7 @@
 
   function nieuweInstellingen(i: Instellingen) {
     inst = i;
+    zetGeluid(i.geluid); zetAnimatie(i.animatie);
     if (!profielenActief(i) && profiel) { profiel = null; zetTourProfiel(null); }
     void laadProfielen();
     void herlaadLijst();
@@ -118,6 +122,7 @@
       await laadProfielen();
       await herlaadLijst();
       inst = i;
+      zetGeluid(i.geluid); zetAnimatie(i.animatie);
       void vraagOpruimen();
     } catch {
       bootFout = true;
@@ -157,6 +162,8 @@
   <OpruimDialoog collages={teOpruimen} onJa={() => void opruimenJa()} onLater={() => (teOpruimen = [])} />
 {/if}
 <Toast />
+<Confetti />
+<svelte:window onpointerdown={ontgrendelGeluid} />
 
 <style>
   .laden { min-height: 100dvh; }

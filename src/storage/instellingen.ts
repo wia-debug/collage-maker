@@ -3,9 +3,9 @@ import type { GehashteCode } from './hash';
 
 export type Toestel = 'ipad' | 'chromebook' | 'pc';
 export type CloudDelen = 'nooit' | 'kind' | 'leerkracht';
-export interface Instellingen { toestel: Toestel | null; profielenAan: boolean; master: GehashteCode | null; cloudDelen: CloudDelen }
+export interface Instellingen { toestel: Toestel | null; profielenAan: boolean; master: GehashteCode | null; cloudDelen: CloudDelen; geluid: boolean; animatie: boolean }
 
-const STANDAARD: Instellingen = { toestel: null, profielenAan: false, master: null, cloudDelen: 'leerkracht' };
+const STANDAARD: Instellingen = { toestel: null, profielenAan: false, master: null, cloudDelen: 'leerkracht', geluid: true, animatie: true };
 
 export async function leesInstellingen(db: CollageDb): Promise<Instellingen> {
   const r = await db.instellingen.get('app');
