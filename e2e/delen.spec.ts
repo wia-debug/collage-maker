@@ -122,3 +122,40 @@ test('alleen bekijken en weggooien', async ({ page, browser }) => {
   await expect(ontvanger.locator('#start-nieuw')).toBeVisible();
   await expect(ontvanger.locator('#mijn-collages')).toHaveCount(0);
 });
+
+const GEBLOKKEERD = () => {
+  (window as any).__peerOpties = { host: 'localhost', port: 9, path: '/', secure: false, debug: 0 };
+  (window as any).__deelTimeoutMs = 1500;
+};
+
+test('ontvanger op geblokkeerd netwerk toont de code en ontvangt via de server', async ({ page, browser }) => {
+  const ontvanger = await nieuwToestel(browser);
+  await nepRelay([page, ontvanger]);
+  await ontvanger.addInitScript(GEBLOKKEERD);
+  await page.addInitScript(GEBLOKKEERD);
+  await ontvanger.goto('/');
+  await ontvanger.click('#start-ontvang');
+  const code = await leesCode(ontvanger);
+  await expect(ontvanger.getByText('Rechtstreeks ontvangen lukt hier niet.')).toBeVisible();
+
+  await openNieuweCollage(page);
+  await maakEnDeel(page, code);
+  await expect(page.getByText('Vraag het aan je leerkracht.')).toBeVisible({ timeout: 10_000 });
+  for (const c of '123456') await page.click(`#cijfer-${c}`);
+  await expect(page.locator('#deel-klaar')).toContainText('Verstuurd via de server.');
+  await expect(ontvanger.locator('#ontvang-open')).toBeVisible({ timeout: 10_000 });
+});
+
+test('ontvanger met regel "nooit" op geblokkeerd netwerk: melding zonder code', async ({ browser }) => {
+  const ontvanger = await nieuwToestel(browser);
+  await nepRelay([ontvanger]);
+  await ontvanger.addInitScript(GEBLOKKEERD);
+  await ontvanger.goto('/');
+  await ontvanger.click('#knop-leerkracht');
+  for (const c of '123456') await ontvanger.click(`#cijfer-${c}`);
+  await ontvanger.click('#cloud-nooit');
+  await ontvanger.click('#leerkracht-sluit');
+  await ontvanger.click('#start-ontvang');
+  await expect(ontvanger.getByText('Ontvangen lukt niet op dit netwerk.')).toBeVisible({ timeout: 10_000 });
+  await expect(ontvanger.locator('[data-symbool]')).toHaveCount(0);
+});

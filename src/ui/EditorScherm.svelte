@@ -244,7 +244,7 @@
       onOpnieuw={() => editor.redo()}
       onHelp={() => startTour(paneel ?? 'editor')}
       onBewaar={openBewaren}
-      onDeel={() => { editor.select(null); toonDeel = true; }}
+      onDeel={() => { editor.select(null); if (controller) toonDeel = true; }}
     />
   </div>
   {#if opdracht && toonOpdracht}
