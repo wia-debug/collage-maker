@@ -16,7 +16,8 @@
     "test:worker": "vitest run --config vitest.worker.config.ts",
     "check:worker": "tsc -p worker/tsconfig.json",
     "relay:deploy": "wrangler deploy --config worker/wrangler.toml",
-    "app:deploy": "vite build && wrangler deploy --assets=./dist --name collagemaker --compatibility-date 2026-09-01"
+    "app:deploy": "vite build && wrangler deploy --assets=./dist --name collagemaker --compatibility-date 2026-09-01",
+    "iconen": "pwa-assets-generator --preset minimal-2023 pwa-bron/logo.png && node -e \"const fs=require('fs');for(const f of fs.readdirSync('pwa-bron'))if(f!=='logo.png')fs.renameSync('pwa-bron/'+f,'public/'+f)\""
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261010.1",

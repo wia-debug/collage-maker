@@ -6,7 +6,8 @@ import basicSsl from '@vitejs/plugin-basic-ssl';
 
 const pwa = VitePWA({
   registerType: 'prompt',
-  pwaAssets: { config: true },
+  // Iconen staan vast in public/ (gemaakt uit pwa-bron/logo.png met `npm run iconen`).
+  includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png'],
   manifest: {
     name: 'Collagemaker',
     short_name: 'Collage',
@@ -17,6 +18,12 @@ const pwa = VitePWA({
     orientation: 'any',
     background_color: '#FFF8EE',
     theme_color: '#FF6B6B',
+    icons: [
+      { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
+      { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+      { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+      { src: 'maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
   },
   workbox: {
     globPatterns: ['**/*.{js,css,html,svg,woff2,png,ico}'],
