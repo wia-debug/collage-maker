@@ -60,6 +60,7 @@ Ook dit kan niet automatisch op een iPad worden getest (WebRTC tussen twee toest
 - Test één toestel op een geblokkeerd netwerk (bijvoorbeeld gast-wifi met een strikte firewall). Dan gaat de collage via de server. Dat werkt alleen als de Worker met de klasmap opnieuw is gedeployed (`npm run relay:deploy`, zie [Delen via de server klaarzetten](delen-instellen.md)). Het kind volgt dezelfde regel als bij gewoon delen (nooit / kind vraagt / leerkracht).
 - Galerij: bekijk de collages groot, open er een als kopie, download de ZIP en de PDF (namen staan erbij) en start de diavoorstelling.
 - Diavoorstelling: druk op Esc in echt volledig scherm; de show moet stoppen en het scherm weer normaal worden.
+- PDF van 30 collages op een iPad: ontvang (of zaai) 30 collages en download de PDF op een iPad. De app mag niet vastlopen of herladen, en elke pagina moet een collage met een naam tonen.
 - Chromebook: ontvangen collages worden niet 60 dagen bewaard, want de sitedata wordt bij elke aanmelding gewist. Download de ZIP of PDF dus voor je uitlogt. De app toont hierover een waarschuwing.
 
 ## Geluid en beweging

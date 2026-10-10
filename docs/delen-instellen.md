@@ -30,3 +30,5 @@ De klasmap voor de leerkracht gebruikt dezelfde Worker en bucket; er is geen ext
 ## Wat kan er misgaan?
 
 De codes zijn kort. Wie binnen de 10 minuten een code raadt, kan een ongewenste collage sturen. Het kind ziet die eerst en kan hem weggooien. Een collage ophalen kan alleen het toestel dat de brievenbus voor die code heeft geopend. Uitzondering: als de ontvanger geen brievenbus kon openen (server druk, of instelling "Nooit"), zou iemand die de code afluistert er zelf een kunnen openen. Zeg codes daarom niet luidop door de klas.
+
+Hetzelfde geldt voor de klasmap. Als het leerkrachttoestel geen klasmap open heeft (instelling "Nooit", of geen verbinding met de server), kan iemand die de code op het bord ziet er zelf een openen. Kinderen op een geblokkeerd netwerk sturen hun collage dan misschien naar die map in plaats van naar de leerkracht. Laat het klasscherm daarom open staan zolang de kinderen sturen, en laat de instelling aan. Tik op Stop als je klaar bent: dan wordt de klasmap gesloten.
