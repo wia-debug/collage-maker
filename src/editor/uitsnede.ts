@@ -35,13 +35,24 @@ export function klemUitsnede(r: Uitsnede, bron: { breedte: number; hoogte: numbe
   };
 }
 
-// Grootste uitsnede met de verhouding doelB:doelH binnen de bron, gecentreerd op het midden van de huidige uitsnede.
+// Nieuwe uitsnede voor een foto die naar doelB x doelH wordt geschaald.
+// - Zelfde verhouding als de huidige uitsnede (marge 1e-3): ongewijzigd (draaien, evenredig schalen).
+// - Andere verhouding: houdt de OPPERVLAKTE van de huidige uitsnede (zoomniveau), gecentreerd op het midden
+//   ervan, en krimpt alleen als dat nodig is om binnen de bron te passen.
+// - Zonder huidige uitsnede telt de hele bron als huidige uitsnede.
+// - Ongeldige verhouding (niet eindig of <= 0): huidige (of hele) uitsnede ongewijzigd.
 export function herUitsnede(huidig: Uitsnede | null, bron: { breedte: number; hoogte: number }, doelB: number, doelH: number): Uitsnede {
+  const basis: Uitsnede = huidig ?? { x: 0, y: 0, breedte: bron.breedte, hoogte: bron.hoogte };
   const ratio = doelB / doelH;
-  const breedte = Math.min(bron.breedte, bron.hoogte * ratio);
-  const hoogte = breedte / ratio;
-  const cx = huidig ? huidig.x + huidig.breedte / 2 : bron.breedte / 2;
-  const cy = huidig ? huidig.y + huidig.hoogte / 2 : bron.hoogte / 2;
+  if (!Number.isFinite(ratio) || ratio <= 0) return basis;
+  if (Math.abs(basis.breedte / basis.hoogte - ratio) < 1e-3) return basis;
+  const oppervlakte = basis.breedte * basis.hoogte;
+  let breedte = Math.sqrt(oppervlakte * ratio);
+  let hoogte = breedte / ratio;
+  const krimp = Math.min(1, bron.breedte / breedte, bron.hoogte / hoogte);
+  breedte *= krimp;
+  hoogte *= krimp;
+  const cx = basis.x + basis.breedte / 2, cy = basis.y + basis.hoogte / 2;
   return {
     x: Math.min(bron.breedte - breedte, Math.max(0, cx - breedte / 2)),
     y: Math.min(bron.hoogte - hoogte, Math.max(0, cy - hoogte / 2)),

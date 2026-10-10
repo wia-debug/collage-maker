@@ -130,6 +130,44 @@ describe('CanvasController', () => {
     expect(ed.get().collage.elementen[0].breedte).toBe(100);
   });
 
+  it('foto: draaien of evenredig schalen houdt de uitsnede; nul-schaal geeft geen NaN', () => {
+    const img = document.createElement('canvas');
+    img.width = 400; img.height = 300;
+    div = document.createElement('div');
+    div.style.cssText = 'width:800px;height:600px;position:fixed;left:0;top:0';
+    document.body.append(div);
+    const ed = createEditor(nieuweCollage('vierkant'));
+    const c2 = new CanvasController(div, ed, { image: () => img });
+    ctrl = c2;
+    const uitsnede = { x: 100, y: 50, breedte: 100, hoogte: 100 };
+    const f = { ...maakFoto({ x: 300, y: 300, breedte: 100, hoogte: 100, assetId: 'a' }), uitsnede };
+    ed.add(f);
+    c2.group(f.id)!.setAttrs({ rotation: 30 });
+    transformer(c2).fire('transformend');
+    expect((ed.get().collage.elementen[0] as typeof f).uitsnede).toEqual(uitsnede);
+    c2.group(f.id)!.setAttrs({ scaleX: 2, scaleY: 2 });
+    transformer(c2).fire('transformend');
+    let el = ed.get().collage.elementen[0] as typeof f;
+    expect(el.breedte).toBe(200);
+    expect(el.uitsnede).toEqual(uitsnede);
+    c2.group(f.id)!.setAttrs({ scaleX: 0, scaleY: 0 });
+    transformer(c2).fire('transformend');
+    el = ed.get().collage.elementen[0] as typeof f;
+    expect(el.breedte).toBe(20);
+    expect(el.hoogte).toBe(20);
+    for (const v of Object.values(el.uitsnede!)) expect(Number.isFinite(v)).toBe(true);
+  });
+
+  it('transformer weigert vakken kleiner dan 20 schermpixels', () => {
+    const { ctrl } = opzet();
+    const f = transformer(ctrl).boundBoxFunc()!;
+    const oud = { x: 0, y: 0, width: 100, height: 100, rotation: 0 };
+    expect(f(oud, { ...oud, width: 5 })).toBe(oud);
+    expect(f(oud, { ...oud, height: 0 })).toBe(oud);
+    const ok = { ...oud, width: 40, height: 30 };
+    expect(f(oud, ok)).toBe(ok);
+  });
+
   it('naarCanvas en naarScherm zijn elkaars inverse', () => {
     const { ctrl } = opzet();
     const p = ctrl.naarScherm(600, 300);

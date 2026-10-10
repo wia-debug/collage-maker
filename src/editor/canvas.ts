@@ -15,6 +15,7 @@ export interface ControllerOpties { onVakTik?(id: string): void }
 
 export type Gereedschap = 'selecteer' | 'teken' | 'gum';
 
+const MIN_MAAT = 20;
 const HOEK_ANKERS = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
 const VRIJE_ANKERS = [...HOEK_ANKERS, 'middle-left', 'middle-right', 'top-center', 'bottom-center'];
 
@@ -55,6 +56,8 @@ export class CanvasController {
       borderStrokeWidth: 3,
       rotateAnchorOffset: 48,
       padding: 6,
+      // Geen nul- of piepkleine vakken: weiger boxen onder 20 schermpixels.
+      boundBoxFunc: (oud, nieuw) => (Math.abs(nieuw.width) < MIN_MAAT || Math.abs(nieuw.height) < MIN_MAAT ? oud : nieuw),
     });
     this.ui.add(this.transformer);
     this.stage.add(this.content, this.ui);
@@ -303,12 +306,13 @@ export class CanvasController {
       const el = this.nodes.get(g.id())?.el;
       const img = el?.type === 'foto' && el.assetId ? this.assets.image(el.assetId) : undefined;
       if (el?.type === 'foto' && img) {
-        const b = Math.round(el.breedte * Math.abs(g.scaleX())), h = Math.round(el.hoogte * Math.abs(g.scaleY()));
+        const bRuw = Math.max(MIN_MAAT, el.breedte * Math.abs(g.scaleX())), hRuw = Math.max(MIN_MAAT, el.hoogte * Math.abs(g.scaleY()));
+        const b = Math.round(bRuw), h = Math.round(hRuw);
         const i = img as HTMLImageElement;
         const bron = { breedte: i.naturalWidth || i.width, hoogte: i.naturalHeight || i.height };
         this.editor.update(g.id(), {
           x: g.x(), y: g.y(), rotatie: g.rotation(), breedte: b, hoogte: h, schaalX: 1, schaalY: 1,
-          uitsnede: herUitsnede(el.uitsnede, bron, b, h),
+          uitsnede: herUitsnede(el.uitsnede, bron, bRuw, hRuw),
         });
         return;
       }
