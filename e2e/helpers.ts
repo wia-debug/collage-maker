@@ -38,6 +38,7 @@ export async function nieuwToestel(browser: import('@playwright/test').Browser, 
 
 // Nagebootste relay met brievenbussen, zoals de Worker; beide toestellen delen dezelfde opslag in het testproces.
 // POST opent een brievenbus (token), PUT kan alleen in een open lege brievenbus, GET vraagt het token.
+// Klasmappen op /__relay/class/: POST opent (token), PUT met X-Naam alleen in een open map, GET lijst/inzending met token; ophalen wist.
 // Later geregistreerde routes gaan voor, dus dit overschrijft de standaard-404 uit richtIn.
 export async function nepRelay(pages: Page[]): Promise<Map<string, Buffer>> {
   const opslag = new Map<string, Buffer>();
@@ -69,6 +70,43 @@ export async function nepRelay(pages: Page[]): Promise<Map<string, Buffer>> {
       opslag.delete(sleutel);
       bussen.delete(sleutel);
       await route.fulfill({ status: 200, body: d, contentType: 'application/octet-stream' });
+    });
+  }
+  const klasMappen = new Map<string, string>();
+  const klasData = new Map<string, Map<string, { naam: string; data: Buffer }>>();
+  for (const p of pages) {
+    await p.route('**/__relay/class/**', async (route) => {
+      const v = route.request();
+      const delen = new URL(v.url()).pathname.split('/').filter(Boolean); // ['__relay', 'class', code, id?]
+      const [, , code, id] = delen;
+      const token = klasMappen.get(code);
+      if (v.method() === 'POST' && !id) {
+        if (token) { await route.fulfill({ status: 409 }); return; }
+        const t = `klas${++teller}`.padEnd(32, '0');
+        klasMappen.set(code, t);
+        klasData.set(code, new Map());
+        await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ token: t }) });
+        return;
+      }
+      if (v.method() === 'PUT' && id) {
+        if (!token) { await route.fulfill({ status: 404 }); return; }
+        const map = klasData.get(code)!;
+        if (map.has(id)) { await route.fulfill({ status: 409 }); return; }
+        map.set(id, { naam: (await v.headerValue('x-naam')) ?? '', data: v.postDataBuffer() ?? Buffer.alloc(0) });
+        await route.fulfill({ status: 201 });
+        return;
+      }
+      if (token && (await v.headerValue('x-sleutel')) !== token) { await route.fulfill({ status: 403 }); return; }
+      if (!token) { await route.fulfill({ status: 404 }); return; }
+      const map = klasData.get(code)!;
+      if (!id) {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([...map].map(([i, d]) => ({ id: i, naam: decodeURIComponent(d.naam) }))) });
+        return;
+      }
+      const d = map.get(id);
+      if (!d) { await route.fulfill({ status: 404 }); return; }
+      map.delete(id);
+      await route.fulfill({ status: 200, body: d.data, contentType: 'application/octet-stream', headers: { 'X-Naam': d.naam, 'Access-Control-Expose-Headers': 'X-Naam' } });
     });
   }
   return opslag;

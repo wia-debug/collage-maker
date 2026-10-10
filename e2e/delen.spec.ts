@@ -14,6 +14,7 @@ async function maakEnDeel(zender: Page, code: string[]) {
     editor.add(maakVorm({ x: 600, y: 600, vorm: 'ster', breedte: 300, hoogte: 300 }));
   });
   await zender.click('#knop-deel');
+  await zender.click('#deel-vriend');
   for (const s of code) await zender.click(`#symbool-${s}`);
 }
 

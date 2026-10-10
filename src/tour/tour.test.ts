@@ -8,7 +8,7 @@ describe('tour', () => {
     for (const id of ['editor', 'leerkracht', 'foto', 'tekst', 'stickers', 'vormen', 'tekenen', 'achtergrond'] as const) {
       expect(TOURS[id].length, id).toBeGreaterThan(0);
     }
-    expect(TOURS.editor).toHaveLength(5);
+    expect(TOURS.editor).toHaveLength(6);
   });
 
   it('onthoudt welke tours gezien zijn', () => {

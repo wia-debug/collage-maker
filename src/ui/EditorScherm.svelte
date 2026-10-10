@@ -43,7 +43,7 @@
   import { startHerinnering } from '../storage/herinnering';
   import type { Toestel } from '../storage/instellingen';
 
-  let { collage, opdracht = null, startPakket = null, toestel, inst, vooraf, profielId = null, onTerug }: { collage: Collage; opdracht?: string | null; startPakket?: string | null; toestel: Toestel; inst: Instellingen; vooraf?: AssetStore; profielId?: string | null; onTerug: () => void } = $props();
+  let { collage, opdracht = null, startPakket = null, toestel, inst, vooraf, profielId = null, profielNaam = null, onTerug }: { collage: Collage; opdracht?: string | null; startPakket?: string | null; toestel: Toestel; inst: Instellingen; vooraf?: AssetStore; profielId?: string | null; profielNaam?: string | null; onTerug: () => void } = $props();
 
   const editor = createEditor(untrack(() => collage));
   const assets = untrack(() => vooraf) ?? new AssetStore();
@@ -360,7 +360,7 @@
 {/if}
 
 {#if toonDeel && controller}
-  <DeelDialoog {controller} collage={$editorState.collage} {assets} {inst} onSluit={() => (toonDeel = false)} />
+  <DeelDialoog {controller} collage={$editorState.collage} {assets} {inst} {profielNaam} onSluit={() => (toonDeel = false)} />
 {/if}
 
 {#if bijsnijden}
