@@ -1,4 +1,4 @@
-﻿import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { TEMPLATES, template } from './templates';
 import { STICKER_PACKS } from './stickers';
 import { FORMATEN } from '../document/formats';

@@ -56,8 +56,8 @@ export class CanvasController {
       borderStrokeWidth: 3,
       rotateAnchorOffset: 48,
       padding: 6,
-      // Geen nul- of piepkleine vakken: weiger boxen onder 20 schermpixels.
-      boundBoxFunc: (oud, nieuw) => (Math.abs(nieuw.width) < MIN_MAAT || Math.abs(nieuw.height) < MIN_MAAT ? oud : nieuw),
+      // Geen nul- of piepkleine vakken: weiger krimpen onder 20 schermpixels (draaien of vergroten van een klein vak blijft kunnen).
+      boundBoxFunc: (oud, nieuw) => ((Math.abs(nieuw.width) < MIN_MAAT && Math.abs(nieuw.width) < Math.abs(oud.width)) || (Math.abs(nieuw.height) < MIN_MAAT && Math.abs(nieuw.height) < Math.abs(oud.height)) ? oud : nieuw),
     });
     this.ui.add(this.transformer);
     this.stage.add(this.content, this.ui);

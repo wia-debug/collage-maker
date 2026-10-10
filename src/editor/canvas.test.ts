@@ -166,6 +166,13 @@ describe('CanvasController', () => {
     expect(f(oud, { ...oud, height: 0 })).toBe(oud);
     const ok = { ...oud, width: 40, height: 30 };
     expect(f(oud, ok)).toBe(ok);
+    // Een al klein vak: draaien (zelfde maat) en vergroten mag, krimpen onder het minimum niet.
+    const klein = { x: 0, y: 0, width: 80, height: 15, rotation: 0 };
+    const gedraaid = { ...klein, rotation: 0.5 };
+    expect(f(klein, gedraaid)).toBe(gedraaid);
+    const groter = { ...klein, height: 18 };
+    expect(f(klein, groter)).toBe(groter);
+    expect(f(klein, { ...klein, height: 10 })).toBe(klein);
   });
 
   it('naarCanvas en naarScherm zijn elkaars inverse', () => {
