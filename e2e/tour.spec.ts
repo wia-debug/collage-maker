@@ -19,5 +19,5 @@ test('rondleiding start de eerste keer en via de help-knop', async ({ page }) =>
 
   await page.click('#tool-stickers');
   await page.click('#knop-help');
-  await expect(page.locator('.driver-popover-title')).toHaveText('Stickerpakketten');
+  await expect(page.locator('.driver-popover-title')).toHaveText('Mijn stickers');
 });

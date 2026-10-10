@@ -42,6 +42,32 @@ Test ook een netwerk dat WebRTC blokkeert, bijvoorbeeld een gast-wifi met een st
 
 Controleer dan dat de app een code toont en dat het ontvangen toestel de collage krijgt.
 
+## Camera en achtergrond weg
+
+De automatische tests kunnen dit niet op een iPad (WebKit op Windows) controleren. Test het dus met de hand:
+- Eigen stickers en de galerij bewaren een Blob in IndexedDB. Controleer op de iPad dat "Mijn stickers" en de galerij na het sluiten en heropenen van de app nog gevuld zijn.
+- Camera, iPad: tik op "Camera" in het fotopaneel. Safari vraagt toestemming; kies "Sta toe" en maak een foto, die komt op de collage. Weiger de toestemming ook eens: de app toont een duidelijke melding en blijft werken.
+- Achtergrond weg, eerste keer: zet internet aan, kies een foto en tik op "Achtergrond weg". Het model (ongeveer 40 MB) wordt eenmalig van de eigen site gehaald; dat duurt even. Daarna blijft het bewaard op het toestel.
+- Achtergrond weg, daarna: zet vliegtuigmodus aan en doe het nog eens. Het moet ook zonder internet werken.
+- Tik op "Maak sticker": de uitgeknipte foto staat daarna bij "Mijn stickers" (en blijft er na herstarten).
+- Stickerpaneel, "Mijn stickers": wis een eigen sticker en controleer dat hij weg is.
+
+## Klas ontvangen
+
+Ook dit kan niet automatisch op een iPad worden getest (WebRTC tussen twee toestellen). Test met drie toestellen, bijvoorbeeld een PC als leerkracht en twee iPads als kinderen:
+- Leerkrachtmenu → "Klas ontvangen". Er verschijnt een code. Toon die op het digibord (grote cijfers/symbolen).
+- Kind: "Delen" → "Naar de leerkracht" → klascode → naam → "Stuur". Controleer dat de collage met de naam bij de leerkracht aankomt, van beide kinderen.
+- Test één toestel op een geblokkeerd netwerk (bijvoorbeeld gast-wifi met een strikte firewall). Dan gaat de collage via de server. Dat werkt alleen als de Worker met de klasmap opnieuw is gedeployed (`npm run relay:deploy`, zie [Delen via de server klaarzetten](delen-instellen.md)). Het kind volgt dezelfde regel als bij gewoon delen (nooit / kind vraagt / leerkracht).
+- Galerij: bekijk de collages groot, open er een als kopie, download de ZIP en de PDF (namen staan erbij) en start de diavoorstelling.
+- Diavoorstelling: druk op Esc in echt volledig scherm; de show moet stoppen en het scherm weer normaal worden.
+- Chromebook: ontvangen collages worden niet 60 dagen bewaard, want de sitedata wordt bij elke aanmelding gewist. Download de ZIP of PDF dus voor je uitlogt. De app toont hierover een waarschuwing.
+
+## Geluid en beweging
+
+- Geluid: op een iPad klinkt een geluid pas na de eerste aanraking. Tik een keer en controleer dat er geluid is.
+- Zet geluid en animaties uit in het leerkrachtmenu en controleer dat het stil en rustig blijft.
+- iPad met "Beweging beperken" aan (Instellingen → Toegankelijkheid → Beweging): de app toont geen animaties.
+
 ## Chromebooks in de klas
 
 Op Chromebooks wordt alle sitedata bij elke aanmelding gewist, dus de instellingen zouden elke sessie terugvallen op de standaard (gedeelde iPad, code `000000`). Gebruik daarom de link `https://<adres>/?toestel=chromebook` als bladwijzer of als startpagina, via het beheer van de school (Google Admin: startpagina of vastgezette bladwijzer). Die link stelt het toesteltype in en gaat meteen naar het beginscherm. Omdat de sitedata telkens gewist wordt, is de leerkrachtcode op een Chromebook altijd `000000`; een gewijzigde code blijft daar niet bewaard.
