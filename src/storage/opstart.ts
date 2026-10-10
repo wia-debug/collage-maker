@@ -1,4 +1,7 @@
 import type { CollageDb } from './db';
+import { bewaarInzending } from './inzendingen';
+import { naarBestand } from './bestand';
+import { maakVorm, nieuweCollage } from '../document/create';
 import { maakHash, type GehashteCode } from './hash';
 import { ruimAutomatischOp } from './opruimen';
 import { leesInstellingen, schrijfInstellingen, type Instellingen, type Toestel } from './instellingen';
@@ -10,7 +13,10 @@ export const STANDAARD_HASH: GehashteCode = { salt: 'Y29sbGFnZS1kZWZhdWx0IQ==', 
 interface E2eInstellingen { toestel: Toestel; profielenAan?: boolean; mastercode?: string }
 
 async function zaaiE2e(db: CollageDb): Promise<void> {
-  (window as unknown as { __opslag: unknown }).__opslag = { db };
+  (window as unknown as { __opslag: unknown }).__opslag = {
+    db, bewaarInzending,
+    testPakket: () => naarBestand({ ...nieuweCollage('vierkant'), elementen: [maakVorm({ x: 600, y: 600, vorm: 'ster', breedte: 400, hoogte: 400 })] }, { blob: () => undefined }),
+  };
   const cfg = (window as unknown as { __e2eInstellingen?: E2eInstellingen }).__e2eInstellingen;
   if (!cfg) return;
   if ((await leesInstellingen(db)).master) return;

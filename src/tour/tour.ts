@@ -2,7 +2,7 @@ import { driver, type DriveStep } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import type { Paneel } from '../ui/types';
 
-export type TourId = 'editor' | 'leerkracht' | Paneel;
+export type TourId = 'editor' | 'leerkracht' | 'galerij' | Paneel;
 
 const stap = (element: string, title: string, description: string): DriveStep => ({ element, popover: { title, description } });
 
@@ -19,6 +19,12 @@ export const TOURS: Record<TourId, DriveStep[]> = {
     stap('#klas-ontvangen', 'Klas ontvangen', 'Toon een code op het bord. Kinderen sturen hun collage naar jou.'),
     stap('#toestel-ipad', 'Toestel', 'Kies hier hoe dit toestel gebruikt wordt. Dat bepaalt hoe collages bewaard worden.'),
     stap('#alles-wissen', 'Alles wissen', 'Wis alle profielen en collages, bijvoorbeeld aan het einde van het schooljaar.'),
+  ],
+  galerij: [
+    stap('#galerij-dia', 'Diavoorstelling', 'Toon alle collages groot op het bord.'),
+    stap('#galerij-zip', 'ZIP', "Download alle collages als foto's."),
+    stap('#galerij-pdf', 'PDF', 'Eén PDF met alle collages en namen, om te printen.'),
+    stap('#galerij-alles-wissen', 'Wissen', 'Wis alles als je klaar bent.'),
   ],
   foto: [
     stap('#foto-kiezen', 'Foto kiezen', 'Kies een foto van dit toestel.'),
@@ -71,7 +77,7 @@ export function tourGezien(id: TourId): boolean {
 }
 
 export function markeerGezien(id: TourId): void {
-  const sleutel = id === 'leerkracht' ? SLEUTEL : (profielSleutel ?? SLEUTEL);
+  const sleutel = id === 'leerkracht' || id === 'galerij' ? SLEUTEL : (profielSleutel ?? SLEUTEL);
   try {
     localStorage.setItem(sleutel, JSON.stringify([...new Set([...gelezen(sleutel), id])]));
   } catch { /* opslag geblokkeerd: tour komt dan opnieuw */ }

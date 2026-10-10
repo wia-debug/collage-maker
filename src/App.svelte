@@ -11,6 +11,7 @@
   import LeerkrachtMenu from './ui/LeerkrachtMenu.svelte';
   import OntvangDialoog from './ui/OntvangDialoog.svelte';
   import KlasOntvangScherm from './ui/KlasOntvangScherm.svelte';
+  import Galerij from './ui/Galerij.svelte';
   import type { Collage } from './document/types';
   import { db } from './storage/db';
   import { opstart } from './storage/opstart';
@@ -162,6 +163,9 @@
 {/if}
 {#if scherm === 'klas' && inst}
   <KlasOntvangScherm {inst} onGalerij={() => (scherm = 'galerij')} onSluit={() => (scherm = null)} />
+{/if}
+{#if scherm === 'galerij' && inst}
+  <Galerij {inst} onOpenKopie={(p) => { scherm = null; void openBestand(p); }} onSluit={() => (scherm = null)} />
 {/if}
 {#if teOpruimen.length && !collage}
   <OpruimDialoog collages={teOpruimen} onJa={() => void opruimenJa()} onLater={() => (teOpruimen = [])} />
