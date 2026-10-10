@@ -36,9 +36,9 @@ const pwaStub = {
 
 export default defineConfig(({ mode }) => ({
   plugins: [svelte(), ...(process.env.VITEST ? [pwaStub] : [pwa]), ...(mode === 'lan' ? [basicSsl()] : [])],
+  optimizeDeps: { include: ['peerjs'] },
   test: {
     include: ['src/**/*.test.ts'],
-    optimizeDeps: { include: ['peerjs'] },
     browser: {
       enabled: true,
       headless: true,
