@@ -46,6 +46,8 @@ export const standaardFabriek: PeerFabriek = (id) =>
 
 const isNetwerkFout = (t?: string) => t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed' || t === 'disconnected' || t === 'webrtc' || t === 'browser-incompatible';
 
+export const OVERDRACHT_MS = 60_000;
+
 export function verstuurDirect(doelId: string, pakket: Blob, o: { timeoutMs?: number; fabriek?: PeerFabriek } = {}): Promise<void> {
   const fabriek = o.fabriek ?? standaardFabriek;
   return new Promise<void>((resolve, reject) => {
@@ -58,18 +60,29 @@ export function verstuurDirect(doelId: string, pakket: Blob, o: { timeoutMs?: nu
       try { peer.destroy(); } catch { /* al weg */ }
       if (f) reject(f); else resolve();
     };
-    const timer = setTimeout(() => einde(new DeelFout('geen-verbinding')), o.timeoutMs ?? deelTimeout());
+    let timer = setTimeout(() => einde(new DeelFout('geen-verbinding')), o.timeoutMs ?? deelTimeout());
     peer.on('error', (err) => {
       if (err?.type === 'peer-unavailable') einde(new DeelFout('niet-gevonden'));
       else if (isNetwerkFout(err?.type)) einde(new DeelFout('geen-verbinding'));
     });
     peer.on('open', async () => {
-      const bestand = await pakket.arrayBuffer();
-      if (klaar) return;
-      const conn = peer.connect(doelId, { reliable: true, serialization: 'binary' });
-      conn.on('open', () => conn.send({ soort: 'collage', bestand }));
-      conn.on('data', (d) => { if ((d as { soort?: string })?.soort === 'ontvangen') einde(); });
-      conn.on('error', () => einde(new DeelFout('geen-verbinding')));
+      try {
+        const bestand = await pakket.arrayBuffer();
+        if (klaar) return;
+        const conn = peer.connect(doelId, { reliable: true, serialization: 'binary' });
+        conn.on('open', () => {
+          if (klaar) return;
+          // Verbonden: de verbindtijd is voorbij, nu geldt de (ruimere) overdrachtstijd.
+          clearTimeout(timer);
+          timer = setTimeout(() => einde(new DeelFout('geen-verbinding')), OVERDRACHT_MS);
+          try { conn.send({ soort: 'collage', bestand }); } catch { einde(new DeelFout('geen-verbinding')); }
+        });
+        conn.on('data', (d) => { if ((d as { soort?: string })?.soort === 'ontvangen') einde(); });
+        conn.on('close', () => einde(new DeelFout('geen-verbinding')));
+        conn.on('error', () => einde(new DeelFout('geen-verbinding')));
+      } catch {
+        einde(new DeelFout('geen-verbinding'));
+      }
     });
   });
 }
@@ -82,16 +95,17 @@ export function startOntvanger(id: string, o: { onPakket(p: Blob): void; onFout?
     peer.on('error', (err) => {
       const f = err?.type === 'unavailable-id' ? new DeelFout('code-bezet') : isNetwerkFout(err?.type) ? new DeelFout('geen-verbinding') : null;
       if (!f) return;
-      if (!geopend) reject(f);
+      if (!geopend) { reject(f); try { peer.destroy(); } catch { /* al weg */ } }
       else o.onFout?.(f);
     });
   });
   peer.on('connection', (conn) => {
     conn.on('data', (d) => {
       const bericht = d as { soort?: string; bestand?: ArrayBuffer | Uint8Array };
-      if (bericht?.soort !== 'collage' || !bericht.bestand) return;
-      o.onPakket(new Blob([bericht.bestand as ArrayBuffer]));
-      conn.send({ soort: 'ontvangen' });
+      const b = bericht?.bestand;
+      if (bericht?.soort !== 'collage' || !(b instanceof ArrayBuffer || ArrayBuffer.isView(b))) return;
+      try { conn.send({ soort: 'ontvangen' }); } catch { /* verbinding weg */ }
+      try { o.onPakket(new Blob([b as BlobPart])); } catch { /* een falende handler mag de verbinding niet breken */ }
     });
   });
   return { klaar, stop: () => { try { peer.destroy(); } catch { /* al weg */ } } };

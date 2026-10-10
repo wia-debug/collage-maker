@@ -9,7 +9,7 @@ function emitter() {
 }
 
 // Een kleine nep-"PeerServer": peers met een id kunnen elkaar bereiken.
-function nepNet(opties: { serverWeg?: boolean; rtcGeblokkeerd?: boolean } = {}) {
+function nepNet(opties: { serverWeg?: boolean; rtcGeblokkeerd?: boolean; dataVertraging?: number } = {}) {
   const peers = new Map<string, ReturnType<typeof maak>>();
   let teller = 0;
   function maak(id?: string) {
@@ -20,8 +20,8 @@ function nepNet(opties: { serverWeg?: boolean; rtcGeblokkeerd?: boolean } = {}) 
       id: echtId,
       connect(doel: string): ConnLike {
         const a = emitter(), b = emitter();
-        const kantA: ConnLike = { on: a.on as any, send: (d) => setTimeout(() => b.emit('data', d)), close() {} };
-        const kantB: ConnLike = { on: b.on as any, send: (d) => setTimeout(() => a.emit('data', d)), close() {} };
+        const kantA: ConnLike = { on: a.on as any, send: (d) => setTimeout(() => b.emit('data', d), opties.dataVertraging), close() { setTimeout(() => b.emit('close')); } };
+        const kantB: ConnLike = { on: b.on as any, send: (d) => setTimeout(() => a.emit('data', d)), close() { setTimeout(() => a.emit('close')); } };
         setTimeout(() => {
           const ander = peers.get(doel);
           if (!ander) { peer.emit('error', { type: 'peer-unavailable' }); return; }
@@ -31,7 +31,7 @@ function nepNet(opties: { serverWeg?: boolean; rtcGeblokkeerd?: boolean } = {}) 
         });
         return kantA;
       },
-      destroy() { peers.delete(echtId); },
+      destroy() { if (peers.get(echtId) === peer) peers.delete(echtId); },
     };
     setTimeout(() => {
       if (opties.serverWeg) { peer.emit('error', { type: 'network' }); return; }
@@ -87,6 +87,59 @@ describe('rechtstreeks delen', () => {
     const b = startOntvanger('kidscollage-abcd', { onPakket: () => {}, fabriek: net.fabriek });
     await expect(b.klaar).rejects.toBeInstanceOf(DeelFout);
     await expect(b.klaar).rejects.toMatchObject({ code: 'code-bezet' });
+    a.stop();
+  });
+
+  it('trage overdracht na het openen lukt ondanks korte verbindtijd', async () => {
+    const net = nepNet({ dataVertraging: 1000 });
+    const ontvangen: Blob[] = [];
+    const o = startOntvanger('kidscollage-abcd', { onPakket: (p) => ontvangen.push(p), fabriek: net.fabriek });
+    await o.klaar;
+    await verstuurDirect('kidscollage-abcd', pakket(), { fabriek: net.fabriek, timeoutMs: 200 });
+    expect(ontvangen).toHaveLength(1);
+    o.stop();
+  });
+
+  it('ontvanger sluit vóór de bevestiging: geen-verbinding, snel', async () => {
+    const net = nepNet();
+    const o = net.fabriek('kidscollage-abcd');
+    await new Promise<void>((r) => o.on('open', () => r()));
+    o.on('connection', (c: ConnLike) => c.on('data', () => c.close()));
+    const t0 = Date.now();
+    await expect(verstuurDirect('kidscollage-abcd', pakket(), { fabriek: net.fabriek, timeoutMs: 1000 })).rejects.toMatchObject({ code: 'geen-verbinding' });
+    expect(Date.now() - t0).toBeLessThan(1000);
+    o.destroy();
+  });
+
+  it('onjuiste berichten worden genegeerd: geen pakket, geen bevestiging', async () => {
+    const net = nepNet();
+    const ontvangen: Blob[] = [];
+    const o = startOntvanger('kidscollage-abcd', { onPakket: (p) => ontvangen.push(p), fabriek: net.fabriek });
+    await o.klaar;
+    const peer = net.fabriek();
+    await new Promise<void>((r) => peer.on('open', () => r()));
+    const conn = peer.connect('kidscollage-abcd');
+    const antwoorden: unknown[] = [];
+    conn.on('data', (d) => antwoorden.push(d));
+    await new Promise<void>((r) => conn.on('open', () => r()));
+    conn.send({ soort: 'collage', bestand: 'tekst' });
+    conn.send({ soort: 'collage', bestand: null });
+    conn.send({ soort: 'anders', bestand: new ArrayBuffer(4) });
+    conn.send(null);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(ontvangen).toHaveLength(0);
+    expect(antwoorden).toHaveLength(0);
+    o.stop();
+    peer.destroy();
+  });
+
+  it('peer wordt opgeruimd na code-bezet', async () => {
+    const net = nepNet();
+    const a = startOntvanger('kidscollage-abcd', { onPakket: () => {}, fabriek: net.fabriek });
+    await a.klaar;
+    const b = startOntvanger('kidscollage-abcd', { onPakket: () => {}, fabriek: net.fabriek });
+    await expect(b.klaar).rejects.toMatchObject({ code: 'code-bezet' });
+    expect(net.peers.size).toBe(1);
     a.stop();
   });
 });

@@ -38,6 +38,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [svelte(), ...(process.env.VITEST ? [pwaStub] : [pwa]), ...(mode === 'lan' ? [basicSsl()] : [])],
   test: {
     include: ['src/**/*.test.ts'],
+    optimizeDeps: { include: ['peerjs'] },
     browser: {
       enabled: true,
       headless: true,
