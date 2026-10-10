@@ -16,6 +16,7 @@ export async function maakVoorbeeld(c: Collage, assets: AssetStore, breedte = 32
   laag.add(renderAchtergrond(c.achtergrond, f.breedte, f.hoogte, assets));
   for (const el of c.elementen) laag.add(renderElement(el, assets));
   stage.add(laag);
+  laag.find('.leeg-vak').forEach((n) => n.hide());
   const url = stage.toDataURL({ pixelRatio: 1 });
   stage.destroy();
   return url;
