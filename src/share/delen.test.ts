@@ -50,4 +50,10 @@ describe('deel', () => {
   it('serverfout wordt doorgegeven', async () => {
     await expect(deel({ code, pakket, instelling: 'kind', vraag: async () => true, direct: geen, relay: relayMet(false) })).rejects.toMatchObject({ code: 'relay' });
   });
+
+  it('geen brievenbus op de server: niet-gevonden', async () => {
+    const relay = maakRelay('https://relay.test');
+    relay.upload = vi.fn(async () => { throw new DeelFout('niet-gevonden'); });
+    await expect(deel({ code, pakket, instelling: 'kind', vraag: async () => true, direct: geen, relay })).rejects.toMatchObject({ code: 'niet-gevonden' });
+  });
 });

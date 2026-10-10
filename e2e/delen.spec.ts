@@ -159,3 +159,30 @@ test('ontvanger met regel "nooit" op geblokkeerd netwerk: melding zonder code', 
   await expect(ontvanger.getByText('Ontvangen lukt niet op dit netwerk.')).toBeVisible({ timeout: 10_000 });
   await expect(ontvanger.locator('[data-symbool]')).toHaveCount(0);
 });
+
+test('geblokkeerd netwerk, niemand wacht via de server op deze code: niemand gevonden', async ({ page }) => {
+  const opslag = await nepRelay([page]);
+  await page.addInitScript(GEBLOKKEERD);
+  await openNieuweCollage(page);
+  await maakEnDeel(page, ['star', 'heart', 'star', 'heart']);
+  await expect(page.getByText('Vraag het aan je leerkracht.')).toBeVisible({ timeout: 10_000 });
+  for (const c of '123456') await page.click(`#cijfer-${c}`);
+  await expect(page.getByRole('alert')).toContainText('Ik vind niemand met deze code. Klopt de code?');
+  expect(opslag.size).toBe(0);
+});
+
+test('ontvanger: brievenbus voor de code is al bezet, dan een nieuwe code', async ({ browser }) => {
+  const ontvanger = await nieuwToestel(browser);
+  await nepRelay([ontvanger]);
+  const geopend: string[] = [];
+  await ontvanger.route('**/__relay/relay/*', async (route) => {
+    if (route.request().method() !== 'POST') { await route.fallback(); return; }
+    geopend.push(route.request().url().split('/').pop()!);
+    if (geopend.length === 1) await route.fulfill({ status: 409 });
+    else await route.fallback();
+  });
+  await ontvanger.goto('/');
+  await ontvanger.click('#start-ontvang');
+  await leesCode(ontvanger);
+  expect(geopend).toHaveLength(2);
+});

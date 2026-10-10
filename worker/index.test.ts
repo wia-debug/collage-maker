@@ -16,25 +16,65 @@ const env = (extra: Partial<Env> = {}): Env => ({ BAK: nepBak(), TOEGESTANE_ORIG
 const req = (method: string, pad: string, body?: BodyInit, headers: Record<string, string> = {}) =>
   new Request(`https://relay.test${pad}`, { method, body, headers: { Origin: ORIGIN, ...headers } });
 
+async function open(e: Env, nu?: number): Promise<string> {
+  const r = await verwerk(req('POST', '/relay/abcd'), e, nu);
+  expect(r.status).toBe(201);
+  const { token } = (await r.json()) as { token: string };
+  return token;
+}
+
 describe('relay-worker', () => {
-  it('PUT dan GET geeft de inhoud, tweede GET is weg', async () => {
+  it('open geeft een token van 32 hex-tekens, tweede open is 409', async () => {
     const e = env();
+    const token = await open(e);
+    expect(token).toMatch(/^[0-9a-f]{32}$/);
+    expect((await verwerk(req('POST', '/relay/abcd'), e)).status).toBe(409);
+    expect((await verwerk(req('POST', '/relay/abce'), e)).status).toBe(201);
+  });
+  it('PUT zonder brievenbus is 404, na open 201, tweede PUT 409', async () => {
+    const e = env();
+    expect((await verwerk(req('PUT', '/relay/abcd', 'hallo'), e)).status).toBe(404);
+    await open(e);
     expect((await verwerk(req('PUT', '/relay/abcd', 'hallo'), e)).status).toBe(201);
-    const r = await verwerk(req('GET', '/relay/abcd'), e);
+    expect((await verwerk(req('PUT', '/relay/abcd', 'anders'), e)).status).toBe(409);
+  });
+  it('GET vraagt het juiste token; daarna is alles weg', async () => {
+    const e = env();
+    const token = await open(e);
+    expect((await verwerk(req('GET', '/relay/abcd', undefined, { 'X-Sleutel': token }), e)).status).toBe(404);
+    await verwerk(req('PUT', '/relay/abcd', 'hallo'), e);
+    expect((await verwerk(req('GET', '/relay/abcd'), e)).status).toBe(403);
+    expect((await verwerk(req('GET', '/relay/abcd', undefined, { 'X-Sleutel': 'f'.repeat(32) }), e)).status).toBe(403);
+    const r = await verwerk(req('GET', '/relay/abcd', undefined, { 'X-Sleutel': token }), e);
     expect(r.status).toBe(200);
     expect(await r.text()).toBe('hallo');
     expect(r.headers.get('Access-Control-Allow-Origin')).toBe(ORIGIN);
-    expect((await verwerk(req('GET', '/relay/abcd'), e)).status).toBe(404);
+    expect((await verwerk(req('GET', '/relay/abcd', undefined, { 'X-Sleutel': token }), e)).status).toBe(404);
+    expect((e.BAK as ReturnType<typeof nepBak>).data.size).toBe(0);
+    await open(e);
   });
-  it('na 10 minuten vervallen', async () => {
+  it('na 10 minuten vervalt de brievenbus: opnieuw openen kan, PUT wordt geweigerd', async () => {
     const e = env();
     const t0 = 1_000_000;
-    await verwerk(req('PUT', '/relay/abcd', 'x'), e, t0);
-    expect((await verwerk(req('GET', '/relay/abcd'), e, t0 + 10 * 60_000 + 1)).status).toBe(404);
+    const token = await open(e, t0);
+    const later = t0 + 10 * 60_000 + 1;
+    expect((await verwerk(req('PUT', '/relay/abcd', 'x'), e, later)).status).toBe(404);
+    expect((await verwerk(req('GET', '/relay/abcd', undefined, { 'X-Sleutel': token }), e, later)).status).toBe(404);
+    await open(e, later);
+  });
+  it('een gevuld pakket vervalt ook na 10 minuten', async () => {
+    const e = env();
+    const t0 = 1_000_000;
+    const token = await open(e, t0);
+    await verwerk(req('PUT', '/relay/abcd', 'x'), e, t0 + 1000);
+    expect((await verwerk(req('GET', '/relay/abcd', undefined, { 'X-Sleutel': token }), e, t0 + 10 * 60_000 + 1)).status).toBe(404);
+    expect((e.BAK as ReturnType<typeof nepBak>).data.size).toBe(0);
   });
   it('te groot, verkeerde sleutel, verkeerde methode', async () => {
     const e = env();
+    await open(e);
     expect((await verwerk(req('PUT', '/relay/abcd', 'x', { 'Content-Length': String(25 * 1024 * 1024 + 1) }), e)).status).toBe(413);
+    expect((await verwerk(req('PUT', '/relay/abcd', new Uint8Array(25 * 1024 * 1024 + 1)), e)).status).toBe(413);
     expect((await verwerk(req('GET', '/relay/ab!cd'), e)).status).toBe(404);
     expect((await verwerk(req('GET', '/iets-anders'), e)).status).toBe(404);
     expect((await verwerk(req('DELETE', '/relay/abcd'), e)).status).toBe(405);
@@ -42,7 +82,8 @@ describe('relay-worker', () => {
   it('OPTIONS geeft CORS-headers', async () => {
     const r = await verwerk(req('OPTIONS', '/relay/abcd'), env());
     expect(r.status).toBe(204);
-    expect(r.headers.get('Access-Control-Allow-Methods')).toContain('PUT');
+    for (const m of ['GET', 'PUT', 'POST', 'OPTIONS']) expect(r.headers.get('Access-Control-Allow-Methods')).toContain(m);
+    expect(r.headers.get('Access-Control-Allow-Headers')).toContain('X-Sleutel');
   });
   it('rate limit geeft 429', async () => {
     const e = env({ LIMIET: { limit: async () => ({ success: false }) } });

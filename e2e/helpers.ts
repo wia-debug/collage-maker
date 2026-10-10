@@ -11,6 +11,8 @@ export async function richtIn(page: Page): Promise<void> {
   await page.addInitScript(() => {
     (window as any).__e2eInstellingen = { toestel: 'pc', profielenAan: false, mastercode: '123456' };
   });
+  // Zonder nepRelay is er geen relay: nooit de HTML-terugval van vite preview laten antwoorden.
+  await page.route('**/__relay/**', (route) => route.fulfill({ status: 404 }));
 }
 
 export const test = base.extend({
@@ -34,16 +36,38 @@ export async function nieuwToestel(browser: import('@playwright/test').Browser, 
   return p;
 }
 
-// Nagebootste relay: beide toestellen delen dezelfde opslag in het testproces.
+// Nagebootste relay met brievenbussen, zoals de Worker; beide toestellen delen dezelfde opslag in het testproces.
+// POST opent een brievenbus (token), PUT kan alleen in een open lege brievenbus, GET vraagt het token.
+// Later geregistreerde routes gaan voor, dus dit overschrijft de standaard-404 uit richtIn.
 export async function nepRelay(pages: Page[]): Promise<Map<string, Buffer>> {
   const opslag = new Map<string, Buffer>();
+  const bussen = new Map<string, string>();
+  let teller = 0;
   for (const p of pages) {
     await p.route('**/__relay/relay/*', async (route) => {
-      const sleutel = route.request().url().split('/').pop()!;
-      if (route.request().method() === 'PUT') { opslag.set(sleutel, route.request().postDataBuffer() ?? Buffer.alloc(0)); await route.fulfill({ status: 201 }); return; }
+      const verzoek = route.request();
+      const sleutel = verzoek.url().split('/').pop()!;
+      const methode = verzoek.method();
+      if (methode === 'POST') {
+        if (bussen.has(sleutel)) { await route.fulfill({ status: 409 }); return; }
+        const token = `token${++teller}`.padEnd(32, '0');
+        bussen.set(sleutel, token);
+        await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ token }) });
+        return;
+      }
+      if (methode === 'PUT') {
+        if (!bussen.has(sleutel)) { await route.fulfill({ status: 404 }); return; }
+        if (opslag.has(sleutel)) { await route.fulfill({ status: 409 }); return; }
+        opslag.set(sleutel, verzoek.postDataBuffer() ?? Buffer.alloc(0));
+        await route.fulfill({ status: 201 });
+        return;
+      }
+      const token = bussen.get(sleutel);
+      if (token && (await verzoek.headerValue('x-sleutel')) !== token) { await route.fulfill({ status: 403 }); return; }
       const d = opslag.get(sleutel);
-      if (!d) { await route.fulfill({ status: 404 }); return; }
+      if (!token || !d) { await route.fulfill({ status: 404 }); return; }
       opslag.delete(sleutel);
+      bussen.delete(sleutel);
       await route.fulfill({ status: 200, body: d, contentType: 'application/octet-stream' });
     });
   }

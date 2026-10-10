@@ -11,8 +11,9 @@
   let { inst, onOpen, onSluit }: { inst: Instellingen; onOpen: (pakket: Blob) => void; onSluit: () => void } = $props();
 
   const VERLOOP_MS = 10 * 60_000;
-  const POLL_MS = 3000;
   const MAX_POGINGEN = 5;
+  // Een hele klas deelt vaak één IP-adres: eerst snel vragen, daarna rustiger.
+  const pollWacht = (verstreken: number) => (verstreken < 60_000 ? 3000 : verstreken < 180_000 ? 5000 : 10_000);
 
   let code = $state<string[]>([]);
   let geenNetwerk = $state(false);
@@ -26,7 +27,7 @@
   const relay = maakRelay();
   const viaServer = () => relay.ingesteld && inst.cloudDelen !== 'nooit';
   let ontvanger: { stop(): void } | null = null;
-  let pollTimer: ReturnType<typeof setInterval> | undefined;
+  let pollTimer: ReturnType<typeof setTimeout> | undefined;
   let verlooptimer: ReturnType<typeof setTimeout> | undefined;
   let weg = false;
   let ronde = 0;
@@ -34,7 +35,7 @@
   function stopAlles() {
     ontvanger?.stop();
     ontvanger = null;
-    clearInterval(pollTimer);
+    clearTimeout(pollTimer);
     pollTimer = undefined;
     clearTimeout(verlooptimer);
     verlooptimer = undefined;
@@ -47,20 +48,18 @@
     voorbeeld = await voorbeeldUitPakket(blob);
   }
 
-  function startPolling(c: string[], mijnRonde: number) {
-    if (!viaServer()) return;
+  function startPolling(c: string[], token: string, mijnRonde: number) {
     const sleutel = codeNaarSleutel(c);
-    let bezig = false;
-    pollTimer = setInterval(async () => {
-      if (bezig) return;
-      bezig = true;
-      try {
-        const blob = await relay.download(sleutel);
-        if (blob && mijnRonde === ronde) await krijg(blob);
-      } finally {
-        bezig = false;
-      }
-    }, POLL_MS);
+    const begin = Date.now();
+    const volgende = () => {
+      pollTimer = setTimeout(async () => {
+        const blob = await relay.download(sleutel, token);
+        if (weg || mijnRonde !== ronde || ontvangen || verlopen) return;
+        if (blob) await krijg(blob);
+        else volgende();
+      }, pollWacht(Date.now() - begin));
+    };
+    volgende();
   }
 
   function startVerloop() {
@@ -92,13 +91,17 @@
       }
       if (weg || mijnRonde !== ronde) { o.stop(); return; }
       if (fout === 'code-bezet') { o.stop(); continue; }
+      // Brievenbus op de server openen: alleen wie het token heeft, kan de collage ophalen.
+      const token = viaServer() ? await relay.open(codeNaarSleutel(c)) : null;
+      if (weg || mijnRonde !== ronde || ontvangen) { o.stop(); return; }
+      if (token === 'bezet') { o.stop(); continue; }
       if (fout) {
         o.stop();
-        if (viaServer()) {
+        if (token) {
           // Rechtstreeks lukt niet, maar via de server kan het nog wel: de code blijft zichtbaar.
           code = c;
           geenDirect = true;
-          startPolling(c, mijnRonde);
+          startPolling(c, token, mijnRonde);
           startVerloop();
         } else {
           geenNetwerk = true;
@@ -107,7 +110,7 @@
       }
       ontvanger = o;
       code = c;
-      startPolling(c, mijnRonde);
+      if (token) startPolling(c, token, mijnRonde);
       startVerloop();
       return;
     }
@@ -129,10 +132,10 @@
       <button id="ontvang-weg" class="breed" onclick={onSluit}><Icon name="trash" /> Weggooien</button>
     {:else}
       {#if geenNetwerk}
-        <p class="fout" role="status">Ontvangen lukt niet op dit netwerk.</p>
+        <p class="fout" role="status"><Icon name="warning" /> Ontvangen lukt niet op dit netwerk.</p>
         <button id="ontvang-nieuw" class="hoofd breed" onclick={() => void start()}>Nieuwe code</button>
       {:else if misgegaan}
-        <p class="fout" role="status">Er ging iets mis. Probeer het nog eens.</p>
+        <p class="fout" role="status"><Icon name="warning" /> Er ging iets mis. Probeer het nog eens.</p>
         <button id="ontvang-nieuw" class="hoofd breed" onclick={() => void start()}>Nieuwe code</button>
       {:else if verlopen}
         <p>De code is verlopen.</p>
@@ -144,7 +147,7 @@
           {/each}
         </div>
         <p>Zeg deze code tegen je vriend.</p>
-        {#if geenDirect}<p class="zacht" role="status">Rechtstreeks ontvangen lukt hier niet. Je vriend kan de collage via de server sturen.</p>{/if}
+        {#if geenDirect}<p class="zacht" role="status">Rechtstreeks ontvangen lukt hier niet. Als je vriend op een ander netwerk zit, kan de collage via de server komen.</p>{/if}
       {:else}
         <p role="status">Even geduld...</p>
       {/if}
@@ -170,7 +173,7 @@
   h2 { margin: 0; text-align: center; }
   p { font-size: 1.2rem; text-align: center; margin: 0; }
   .zacht { font-size: 1rem; opacity: 0.8; }
-  .fout { color: #c0392b; font-weight: 700; }
+  .fout { color: #c0392b; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .code { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
   .symbool { width: 92px; height: 92px; border-radius: 22px; background: var(--creme); display: grid; place-items: center; box-shadow: var(--schaduw); }
   img { width: 100%; object-fit: contain; background: var(--werkvlak); border-radius: 16px; }

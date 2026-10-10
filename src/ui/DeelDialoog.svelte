@@ -76,7 +76,7 @@
         <p id="deel-klaar">{manier === 'direct' ? 'Verstuurd!' : 'Verstuurd via de server.'}</p>
       </div>
     {:else}
-      <p class="fout" role="alert">{melding}</p>
+      <p class="fout" role="alert"><Icon name="warning" /> {melding}</p>
     {/if}
     <button id="deel-sluit" class="breed" onclick={onSluit}>Sluiten</button>
   </div>
@@ -89,6 +89,6 @@
   p { font-size: 1.2rem; text-align: center; margin: 0; }
   .klaar { display: grid; justify-items: center; gap: 8px; color: var(--mint); }
   .klaar p { color: var(--inkt); font-weight: 800; }
-  .fout { color: #c0392b; font-weight: 700; }
+  .fout { color: #c0392b; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .breed { width: 100%; }
 </style>
