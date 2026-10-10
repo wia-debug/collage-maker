@@ -11,6 +11,7 @@ export const TOURS: Record<TourId, DriveStep[]> = {
     stap('#tool-foto', "Foto's", 'Tik hier om een foto toe te voegen. Je kan ook een foto op je collage slepen.'),
     stap('#tool-stickers', 'Stickers', 'Kies leuke stickers. Maak ze groter of kleiner met twee vingers of met de hoekjes.'),
     stap('#canvas-vlak', 'Je collage', 'Tik op iets om het te kiezen. Sleep om het te verplaatsen. Met Verhouding los kan je een foto uitrekken.'),
+    stap('#knop-meer', 'Meer kiezen', 'Tik hier en dan op meerdere dingen. Of sleep een kader rond wat je samen wil verplaatsen.'),
     stap('#knop-ongedaan', 'Oeps?', 'Foutje gemaakt? Tik hier en het is weer weg.'),
     stap('#knop-deel', 'Delen', 'Stuur je collage naar een vriend of naar je leerkracht.'),
     stap('#knop-bewaar', 'Bewaren', 'Klaar? Bewaar je collage als foto of als PDF.'),

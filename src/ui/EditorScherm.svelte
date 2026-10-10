@@ -20,6 +20,8 @@
   import BovenBalk from './BovenBalk.svelte';
   import GereedschapBalk from './GereedschapBalk.svelte';
   import ContextBalk from './ContextBalk.svelte';
+  import KeuzeBalk from './KeuzeBalk.svelte';
+  import { schuifKeuze } from '../editor/keuze';
   import Dialoog from './Dialoog.svelte';
   import VormPaneel from './VormPaneel.svelte';
   import StickerPaneel from './StickerPaneel.svelte';
@@ -82,7 +84,7 @@
     }
   }
 
-  function openBewaren() { selectieVoorExport = editor.get().selectedId; editor.select(null); toonExport = true; }
+  function openBewaren() { selectieVoorExport = [...editor.get().selectedIds]; editor.select(null); toonExport = true; }
 
   function terug() {
     if (toestel === 'chromebook' && gewijzigdSindsBestand()) { vraagTerug = true; return; }
@@ -95,9 +97,22 @@
   let vraagTerug = $state(false);
   let toonExport = $state(false);
   let toonDeel = $state(false);
-  let selectieVoorExport: string | null = null;
+  let selectieVoorExport: string[] = [];
 
   const geselecteerd = $derived($editorState.collage.elementen.find((e) => e.id === $editorState.selectedId) ?? null);
+  const keuze = $derived($editorState.selectedIds.map((id) => $editorState.collage.elementen.find((e) => e.id === id)).filter((e): e is Element => !!e));
+  let meerKiezen = $state(false);
+  let vorigeLengte = 0;
+  function zetMeer(v: boolean) { meerKiezen = v; controller?.zetMeerKiezen(v); }
+  $effect(() => {
+    const n = $editorState.selectedIds.length;
+    untrack(() => {
+      if (n > 1) paneel = null;
+      // "Meer kiezen" gaat vanzelf uit als de keuze leeg wordt.
+      if (vorigeLengte > 0 && n === 0 && meerKiezen) zetMeer(false);
+      vorigeLengte = n;
+    });
+  });
   const PANEEL_VOOR: Record<Element['type'], Paneel | null> = { foto: 'foto', tekst: 'tekst', sticker: 'stickers', vorm: 'vormen', tekening: null };
 
   $effect(() => {
@@ -221,9 +236,10 @@
 
   function sluitExport() {
     toonExport = false;
-    const id = selectieVoorExport;
-    selectieVoorExport = null;
-    if (id && editor.get().collage.elementen.some((e) => e.id === id)) editor.select(id);
+    const ids = selectieVoorExport;
+    selectieVoorExport = [];
+    const bestaat = new Set(editor.get().collage.elementen.map((e) => e.id));
+    if (ids.some((id) => bestaat.has(id))) editor.selectMany(ids.filter((id) => bestaat.has(id)));
   }
 
   let fotoInput: HTMLInputElement;
@@ -272,6 +288,13 @@
     if ((e.target as HTMLElement).closest('input, textarea, [contenteditable]')) return;
     const actie = toetsNaarActie(e);
     if (!actie) return;
+    if (keuze.length > 1 && (actie.soort === 'wissen' || actie.soort === 'kopie' || actie.soort === 'schuif')) {
+      if (actie.soort === 'wissen') editor.removeMany(keuze.filter((x) => !x.vergrendeld).map((x) => x.id));
+      else if (actie.soort === 'kopie') editor.duplicateMany(keuze.map((x) => x.id));
+      else editor.updateMany(schuifKeuze(keuze, actie.dx, actie.dy));
+      e.preventDefault();
+      return;
+    }
     const el = geselecteerd;
     switch (actie.soort) {
       case 'ongedaan': editor.undo(); break;
@@ -299,6 +322,8 @@
       onOpnieuw={() => editor.redo()}
       onHelp={() => startTour(paneel ?? 'editor')}
       onBewaar={openBewaren}
+      meer={meerKiezen}
+      onMeer={() => zetMeer(!meerKiezen)}
       onDeel={() => { editor.select(null); if (controller) toonDeel = true; }}
     />
   </div>
@@ -312,7 +337,7 @@
   <div class="vak-tools"><GereedschapBalk actief={paneel} onKies={(p) => { if (p === 'achtergrond') editor.select(null); paneel = paneel === p ? null : p; }} /></div>
   <div class="vak-canvas" id="canvas-vlak" role="application" aria-label="Collage">
     <div class="canvas" bind:this={canvasEl}></div>
-    {#if geselecteerd}<ContextBalk {editor} el={geselecteerd} onTekst={() => wijzigTekst(geselecteerd!.id)} onBijsnijden={() => openBijsnijden(geselecteerd!.id)} onAchtergrondWeg={() => void achtergrondWeg(geselecteerd!.id)} onMaakSticker={() => void maakSticker(geselecteerd!.id)} />{/if}
+    {#if keuze.length > 1}<KeuzeBalk {editor} {keuze} alle={$editorState.collage.elementen} />{:else if geselecteerd}<ContextBalk {editor} el={geselecteerd} onTekst={() => wijzigTekst(geselecteerd!.id)} onBijsnijden={() => openBijsnijden(geselecteerd!.id)} onAchtergrondWeg={() => void achtergrondWeg(geselecteerd!.id)} onMaakSticker={() => void maakSticker(geselecteerd!.id)} />{/if}
   </div>
   {#if paneel}
     <aside class="vak-paneel" id="paneel-{paneel}">
