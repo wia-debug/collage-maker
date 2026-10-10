@@ -1,6 +1,6 @@
 import Konva from 'konva';
 import type { Pad, VormElement } from '../document/types';
-import { baseGroup } from './base';
+import { baseGroup, zichtbaarheid } from './base';
 import { tracePad, type PathCtx } from './paths';
 
 export function renderVorm(el: VormElement): Konva.Group {
@@ -12,7 +12,7 @@ export function renderVorm(el: VormElement): Konva.Group {
       strokeWidth: el.randDikte,
       lineCap: 'round',
       hitStrokeWidth: Math.max(el.randDikte, 44),
-      opacity: el.doorzichtigheid,
+      opacity: zichtbaarheid(el.doorzichtigheid),
     }));
     return g;
   }
@@ -24,7 +24,7 @@ export function renderVorm(el: VormElement): Konva.Group {
     stroke: el.rand ?? undefined,
     strokeWidth: el.rand ? el.randDikte : 0,
     lineJoin: 'round',
-    opacity: el.doorzichtigheid,
+    opacity: zichtbaarheid(el.doorzichtigheid),
     sceneFunc(ctx, shape) {
       tracePad(ctx as unknown as PathCtx, pad, el.breedte, el.hoogte);
       ctx.fillStrokeShape(shape);

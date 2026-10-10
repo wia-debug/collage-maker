@@ -53,6 +53,16 @@ describe('renderElement', () => {
     expect(renderElement({ ...s, doorzichtigheid: 0.4 }, leeg).opacity()).toBe(0.4);
   });
 
+  it('klemt doorzichtigheid van sticker en vorm op 0.1..1', () => {
+    const s = maakSticker({ x: 0, y: 0, sticker: 'dieren/cat', kleur: '#FF0000', grootte: 200 });
+    expect(renderElement({ ...s, doorzichtigheid: 0 }, leeg).opacity()).toBe(0.1);
+    expect(renderElement({ ...s, doorzichtigheid: 7 }, leeg).opacity()).toBe(1);
+    expect(renderElement({ ...s, doorzichtigheid: NaN }, leeg).opacity()).toBe(1);
+    const v = maakVorm({ x: 0, y: 0, vorm: 'rond', breedte: 50, hoogte: 50 });
+    expect((renderElement({ ...v, doorzichtigheid: 0 }, leeg).getChildren()[0]).opacity()).toBe(0.1);
+    expect((renderElement({ ...v, doorzichtigheid: 3 }, leeg).getChildren()[0]).opacity()).toBe(1);
+  });
+
   it('onbekend type geeft een duidelijke fout (tot de renderer bestaat)', () => {
     const f = maakFoto({ x: 0, y: 0, breedte: 10, hoogte: 10, assetId: null });
     expect(() => renderElement({ ...f, type: 'onbekend' } as never, leeg)).toThrow('Geen renderer voor onbekend');
