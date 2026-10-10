@@ -33,10 +33,14 @@ PC:
 
 Test delen met twee toestellen die op hetzelfde netwerk zitten (bijvoorbeeld iPad en PC, of iPad en Chromebook):
 - Open de app op beide toestellen. Tik op het ene toestel op "Ontvang". Er verschijnt een code.
-- Maak op het andere toestel een collage, tik op "Deel" en voer de code in. Komt er een vraag of de collage via de server mag, kies dan "Ja" (dat hoort bij het deel-gedeelte met de relay, zie hieronder).
+- Maak op het andere toestel een collage, tik op "Deel" en voer de code in. Op hetzelfde netwerk gaat de collage rechtstreeks, zonder extra vraag.
 - Het ontvangen toestel toont de collage. Op de iPad kun je hem daarna openen met "Openen".
 
-Test ook een netwerk dat WebRTC blokkeert, bijvoorbeeld een gast-wifi met een strikte firewall. Rechtstreeks delen lukt daar niet, dus de collage gaat via de eigen server (de relay). Dat werkt alleen als de relay is ingesteld, zie [Delen via de server klaarzetten](delen-instellen.md). Controleer dan dat de app een code toont en dat het ontvangen toestel de collage krijgt.
+Test ook een netwerk dat WebRTC blokkeert, bijvoorbeeld een gast-wifi met een strikte firewall. Rechtstreeks delen lukt daar niet, dus de collage gaat via de eigen server (de relay). Dat werkt alleen als de relay is ingesteld, zie [Delen via de server klaarzetten](delen-instellen.md). Wat je dan ziet, hangt af van de regel in het leerkrachtmenu:
+- "Mij vragen" (standaard): de leerkracht typt de leerkrachtcode in; er is geen knop "Ja".
+- "Kind vragen": het kind tikt op "Ja".
+
+Controleer dan dat de app een code toont en dat het ontvangen toestel de collage krijgt.
 
 ## Chromebooks in de klas
 

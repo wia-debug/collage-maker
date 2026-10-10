@@ -2,13 +2,27 @@
 
 Rechtstreeks delen werkt zonder eigen server (via de publieke PeerJS-server). De eigen relay is alleen nodig voor netwerken die WebRTC blokkeren.
 
+De publieke PeerJS-server ziet de IP-adressen van de toestellen en de deelcodes. De collage zelf gaat versleuteld rechtstreeks van toestel naar toestel en komt niet langs die server.
+
 1. Log in: `npx wrangler login`
 2. Maak de opslag: `npx wrangler r2 bucket create collagemaker-relay`
 3. Laat alles na 1 dag wissen: `npx wrangler r2 bucket lifecycle add collagemaker-relay verval-na-1-dag --expire-days 1`
    (of in het Cloudflare-dashboard: R2 → collagemaker-relay → Settings → Object lifecycle rules)
-4. Zet in `worker/wrangler.toml` bij `TOEGESTANE_ORIGIN` het adres van de app (bijvoorbeeld `https://collagemaker.pages.dev`).
+4. Zet in `worker/wrangler.toml` bij `TOEGESTANE_ORIGIN` het adres van de app, precies zoals in de adresbalk en zonder `/` op het einde (bijvoorbeeld `https://collagemaker.pages.dev`).
 5. Zet de Worker online: `npm run relay:deploy`. Noteer het adres (bijvoorbeeld `https://collagemaker-relay.<jouw-naam>.workers.dev`).
 6. Maak in de projectmap een bestand `.env.production` met `VITE_RELAY_URL=<dat adres>` en bouw de app opnieuw (`npm run build`).
+   Bouwt Cloudflare Pages de app voor je? Zet `VITE_RELAY_URL` dan bij de instellingen van het Pages-project (Settings → Environment variables) in plaats van in `.env.production`, en bouw opnieuw.
 7. Kies in het leerkrachtmenu de regel voor delen via de server (standaard: "Mij vragen").
+   Op Chromebooks wordt de leerkrachtcode bij elke aanmelding teruggezet op `000000`. Kies daar dus "Nooit" of "Kind vragen".
 
 De Worker logt geen inhoud. Een pakket kan één keer opgehaald worden, vervalt na 10 minuten en wordt na 24 uur in elk geval gewist.
+
+De Worker beperkt het aantal verzoeken per IP-adres (600 per minuut, in `worker/wrangler.toml`). Een hele school deelt vaak één publiek IP-adres; komen er toch te veel verzoeken, verhoog dan die limiet.
+
+## Hoe werkt het?
+
+Het ontvangende toestel opent op de server een brievenbus voor zijn code en krijgt daarbij een geheime sleutel. Een zender kan alleen iets in een open, lege brievenbus leggen. Alleen het toestel met de sleutel kan de collage ophalen; daarna is alles weg.
+
+## Wat kan er misgaan?
+
+De codes zijn kort. Wie binnen de 10 minuten een code raadt, kan een ongewenste collage sturen. Het kind ziet die eerst en kan hem weggooien. Niemand kan een collage ophalen die voor iemand anders bedoeld is.
