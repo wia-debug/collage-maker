@@ -37,12 +37,13 @@
   import { startTour, tourGezien } from '../tour/tour';
   import { db } from '../storage/db';
   import { bewaarCollage } from '../storage/collages';
+  import { bewaarEigenSticker, snijTransparantBij, StickerFout } from '../storage/eigen-stickers';
   import { isVolFout, startAutosave } from '../storage/autosave';
   import { maakVoorbeeld } from '../export/voorbeeld';
   import { startHerinnering } from '../storage/herinnering';
   import type { Toestel } from '../storage/instellingen';
 
-  let { collage, opdracht = null, startPakket = null, toestel, inst, vooraf, onTerug }: { collage: Collage; opdracht?: string | null; startPakket?: string | null; toestel: Toestel; inst: Instellingen; vooraf?: AssetStore; onTerug: () => void } = $props();
+  let { collage, opdracht = null, startPakket = null, toestel, inst, vooraf, profielId = null, onTerug }: { collage: Collage; opdracht?: string | null; startPakket?: string | null; toestel: Toestel; inst: Instellingen; vooraf?: AssetStore; profielId?: string | null; onTerug: () => void } = $props();
 
   const editor = createEditor(untrack(() => collage));
   const assets = untrack(() => vooraf) ?? new AssetStore();
@@ -165,6 +166,18 @@
   let bijsnijden = $state<{ id: string; bron: HTMLImageElement; start: Uitsnede | null } | null>(null);
   let achtergrondBezig = $state<{ deel: number | null; download: boolean } | null>(null);
   const modaalOpen = $derived(!!bijsnijden || toonExport || toonDeel || toonCamera || vraagTerug || !!achtergrondBezig);
+
+  async function maakSticker(id: string) {
+    const f = editor.get().collage.elementen.find((e) => e.id === id);
+    const blob = f?.type === 'foto' && f.assetId ? assets.blob(f.assetId) : undefined;
+    if (!blob) return;
+    try {
+      await bewaarEigenSticker(db, profielId, await snijTransparantBij(blob));
+      toon('Bewaard in Mijn stickers', 'check-circle');
+    } catch (e) {
+      toon(e instanceof StickerFout ? 'Je hebt al veel stickers. Wis er eerst een paar.' : 'Bewaren lukte niet. Probeer het nog eens.', 'warning');
+    }
+  }
 
   async function achtergrondWeg(id: string) {
     const f = editor.get().collage.elementen.find((e) => e.id === id);
@@ -289,13 +302,13 @@
   <div class="vak-tools"><GereedschapBalk actief={paneel} onKies={(p) => { if (p === 'achtergrond') editor.select(null); paneel = paneel === p ? null : p; }} /></div>
   <div class="vak-canvas" id="canvas-vlak" role="application" aria-label="Collage">
     <div class="canvas" bind:this={canvasEl}></div>
-    {#if geselecteerd}<ContextBalk {editor} el={geselecteerd} onTekst={() => wijzigTekst(geselecteerd!.id)} onBijsnijden={() => openBijsnijden(geselecteerd!.id)} onAchtergrondWeg={() => void achtergrondWeg(geselecteerd!.id)} />{/if}
+    {#if geselecteerd}<ContextBalk {editor} el={geselecteerd} onTekst={() => wijzigTekst(geselecteerd!.id)} onBijsnijden={() => openBijsnijden(geselecteerd!.id)} onAchtergrondWeg={() => void achtergrondWeg(geselecteerd!.id)} onMaakSticker={() => void maakSticker(geselecteerd!.id)} />{/if}
   </div>
   {#if paneel}
     <aside class="vak-paneel" id="paneel-{paneel}">
       {#if paneel === 'vormen'}<VormPaneel {editor} el={geselecteerd} />{/if}
-      {#if paneel === 'stickers'}<StickerPaneel {editor} {assets} el={geselecteerd} {startPakket} />{/if}
-      {#if paneel === 'foto'}<FotoPaneel {editor} {assets} el={geselecteerd} onKiesFoto={kiesFoto} onCamera={openCamera} onBijsnijden={openBijsnijden} onAchtergrondWeg={(id) => void achtergrondWeg(id)} />{/if}
+      {#if paneel === 'stickers'}<StickerPaneel {editor} {assets} el={geselecteerd} {startPakket} {profielId} />{/if}
+      {#if paneel === 'foto'}<FotoPaneel {editor} {assets} el={geselecteerd} onKiesFoto={kiesFoto} onCamera={openCamera} onBijsnijden={openBijsnijden} onAchtergrondWeg={(id) => void achtergrondWeg(id)} onMaakSticker={(id) => void maakSticker(id)} />{/if}
       {#if paneel === 'tekst'}<TekstPaneel {editor} el={geselecteerd} onNieuw={() => tekstInvoer.openen('', null)} onWijzig={wijzigTekst} />{/if}
       {#if paneel === 'tekenen'}<TekenPaneel {controller} />{/if}
       {#if paneel === 'achtergrond'}<AchtergrondPaneel {editor} {assets} achtergrond={$editorState.collage.achtergrond} />{/if}

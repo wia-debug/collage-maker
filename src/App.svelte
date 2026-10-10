@@ -148,7 +148,7 @@
     <ProfielKiezer {profielen} onGekozen={kiesProfiel} onNieuw={() => (nieuwProfiel = true)} onLeerkracht={() => (toonLeerkracht = true)} />
   {/if}
 {:else if collage}
-  <EditorScherm {collage} {opdracht} startPakket={pakket} toestel={inst.toestel ?? 'ipad'} {inst} vooraf={editorAssets} onTerug={terug} />
+  <EditorScherm {collage} {opdracht} startPakket={pakket} toestel={inst.toestel ?? 'ipad'} {inst} vooraf={editorAssets} profielId={profiel?.id ?? null} onTerug={terug} />
 {:else}
   <StartScherm onStart={start} {profiel} onWissel={profielenActief(inst) ? wissel : undefined} {collages} onOpen={open} onWis={wis} onOpenBestand={inst.toestel === 'ipad' ? undefined : openBestand} onLeerkracht={() => (toonLeerkracht = true)} onOntvang={() => (toonOntvang = true)} />
 {/if}

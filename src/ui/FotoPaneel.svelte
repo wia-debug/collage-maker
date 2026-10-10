@@ -8,7 +8,7 @@
   import type { Element, Masker } from '../document/types';
   import type { Editor } from '../editor/store';
 
-  let { editor, assets, el, onKiesFoto, onCamera, onBijsnijden, onAchtergrondWeg }: { editor: Editor; assets: AssetStore; el: Element | null; onKiesFoto: (vakId?: string) => void; onCamera: (vakId?: string) => void; onBijsnijden: (id: string) => void; onAchtergrondWeg: (id: string) => void } = $props();
+  let { editor, assets, el, onKiesFoto, onCamera, onBijsnijden, onAchtergrondWeg, onMaakSticker }: { editor: Editor; assets: AssetStore; el: Element | null; onKiesFoto: (vakId?: string) => void; onCamera: (vakId?: string) => void; onBijsnijden: (id: string) => void; onAchtergrondWeg: (id: string) => void; onMaakSticker: (id: string) => void } = $props();
   const foto = $derived(el?.type === 'foto' ? el : null);
   const assetId = $derived(foto?.assetId ?? null);
   const voorbeelden = $derived.by(() => {
@@ -34,6 +34,7 @@
 {#if foto && foto.assetId}
   <button id="foto-bijsnijden" class="breed" onclick={() => onBijsnijden(foto.id)}><Icon name="crop" /> Bijsnijden</button>
   <button id="foto-achtergrond-weg" class="breed" onclick={() => onAchtergrondWeg(foto.id)}><Icon name="magic-wand" /> Achtergrond weg</button>
+  {#if foto.uitknipsel}<button id="foto-maak-sticker" class="breed" onclick={() => onMaakSticker(foto.id)}><Icon name="sticker" /> Maak sticker</button>{/if}
   <h3>Vorm</h3>
   <div class="raster">
     {#each MASKERS as m}

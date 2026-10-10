@@ -2,7 +2,7 @@
   import Icon from './Icon.svelte';
   import type { Element } from '../document/types';
   import type { Editor } from '../editor/store';
-  let { editor, el, onTekst, onBijsnijden, onAchtergrondWeg }: { editor: Editor; el: Element; onTekst?: () => void; onBijsnijden?: () => void; onAchtergrondWeg?: () => void } = $props();
+  let { editor, el, onTekst, onBijsnijden, onAchtergrondWeg, onMaakSticker }: { editor: Editor; el: Element; onTekst?: () => void; onBijsnijden?: () => void; onAchtergrondWeg?: () => void; onMaakSticker?: () => void } = $props();
 </script>
 
 <div class="context-balk" role="toolbar" aria-label="Bewerk element">
@@ -22,6 +22,9 @@
     {/if}
     {#if el.type === 'foto' && el.assetId && onAchtergrondWeg}
       <button id="ctx-achtergrond-weg" onclick={onAchtergrondWeg}><Icon name="magic-wand" /><span>Weg</span></button>
+    {/if}
+    {#if el.type === 'foto' && el.uitknipsel && onMaakSticker}
+      <button id="ctx-maak-sticker" onclick={onMaakSticker}><Icon name="sticker" /><span>Sticker</span></button>
     {/if}
     <button id="ctx-voor" onclick={() => editor.move(el.id, 'voor')}><Icon name="arrow-line-up" /><span>Voor</span></button>
     <button id="ctx-achter" onclick={() => editor.move(el.id, 'achter')}><Icon name="arrow-line-down" /><span>Achter</span></button>
