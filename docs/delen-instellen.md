@@ -23,6 +23,10 @@ De Worker beperkt het aantal verzoeken per IP-adres (600 per minuut, in `worker/
 
 Het ontvangende toestel opent op de server een brievenbus voor zijn code en krijgt daarbij een geheime sleutel. Een zender kan alleen iets in een open, lege brievenbus leggen. Alleen het toestel met de sleutel kan de collage ophalen; daarna is alles weg.
 
+## Klas ontvangen
+
+De klasmap voor de leerkracht gebruikt dezelfde Worker en bucket; er is geen extra instelling nodig. De klasmap leeft 2 uur, verlengd zolang de leerkracht ontvangt (hooguit 8 uur na het openen), en bevat maximaal 60 collages. Alleen het leerkrachttoestel met de geheime sleutel kan ze ophalen; na het ophalen worden ze van de server gewist. De R2-regel wist alles na 1 dag. Om de nieuwe routes te krijgen moet je de Worker opnieuw deployen met `npm run relay:deploy` (stap voor jou als gebruiker).
+
 ## Wat kan er misgaan?
 
 De codes zijn kort. Wie binnen de 10 minuten een code raadt, kan een ongewenste collage sturen. Het kind ziet die eerst en kan hem weggooien. Een collage ophalen kan alleen het toestel dat de brievenbus voor die code heeft geopend. Uitzondering: als de ontvanger geen brievenbus kon openen (server druk, of instelling "Nooit"), zou iemand die de code afluistert er zelf een kunnen openen. Zeg codes daarom niet luidop door de klas.
