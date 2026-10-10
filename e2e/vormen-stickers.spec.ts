@@ -24,3 +24,27 @@ test('sticker toevoegen uit een ander pakket en herkleuren', async ({ page }) =>
   await page.locator('#paneel-stickers .palet').getByRole('button', { name: '#3BB273' }).click();
   await page.waitForFunction(() => window.__collage.editor.get().collage.elementen[0].kleur === '#3BB273');
 });
+
+test('sticker doorzichtigheid met de schuif Zichtbaar', async ({ page }) => {
+  await openNieuweCollage(page);
+  await page.click('#tool-stickers');
+  await page.locator('.sticker-knop').first().click();
+  await page.waitForFunction(() => window.__collage.editor.get().collage.elementen.length === 1);
+  await page.$eval('#schuif-zichtbaar', (el: HTMLInputElement) => {
+    el.value = '40';
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  const [st] = await elementen(page);
+  expect(st.doorzichtigheid).toBeCloseTo(0.4);
+});
+
+for (const [id, vorm, breedte, hoogte] of [['ruit', 'ruit', 300, 300], ['vijfhoek', 'vijfhoek', 300, 300], ['zeshoek', 'zeshoek', 300, 300], ['rechthoek-breed', 'rechthoek', 420, 260]] as const) {
+  test(`vorm ${id} toevoegen`, async ({ page }) => {
+    await openNieuweCollage(page);
+    await page.click('#tool-vormen');
+    await page.click(`#vorm-${id}`);
+    const els = await elementen(page);
+    expect(els).toHaveLength(1);
+    expect(els[0]).toMatchObject({ type: 'vorm', vorm, breedte, hoogte });
+  });
+}

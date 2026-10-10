@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { tracePad, type PathCtx } from './paths';
 import type { Pad } from '../document/types';
 
-const PADEN: Pad[] = ['rechthoek', 'rond', 'hart', 'ster', 'wolk', 'blob', 'driehoek', 'pijl'];
+const PADEN: Pad[] = ['rechthoek', 'rond', 'hart', 'ster', 'wolk', 'blob', 'driehoek', 'pijl', 'ruit', 'vijfhoek', 'zeshoek'];
 
 function ctx() {
   const c = new OffscreenCanvas(100, 100).getContext('2d')!;

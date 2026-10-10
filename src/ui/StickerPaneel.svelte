@@ -2,6 +2,7 @@
   import { untrack } from 'svelte';
   import Icon from './Icon.svelte';
   import KleurPalet from './KleurPalet.svelte';
+  import Schuif from './Schuif.svelte';
   import { STICKER_PACKS, stickerUrl } from '../assets/stickers';
   import type { AssetStore } from '../assets/store';
   import { FORMATEN } from '../document/formats';
@@ -50,6 +51,9 @@
 </div>
 <h3>Kleur</h3>
 <KleurPalet waarde={sticker?.kleur ?? kleur} onKies={kiesKleur} />
+{#if sticker}
+  <Schuif label="Zichtbaar" min={10} max={100} waarde={Math.round((sticker.doorzichtigheid ?? 1) * 100)} onLive={(v) => editor.voorbeeld(sticker.id, { doorzichtigheid: v / 100 })} onWijzig={(v) => editor.update(sticker.id, { doorzichtigheid: v / 100 })} />
+{/if}
 
 <style>
   .pakketten { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 8px; }

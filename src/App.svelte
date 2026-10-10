@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import StartScherm from './ui/StartScherm.svelte';
   import EditorScherm from './ui/EditorScherm.svelte';
-  import EersteStart from './ui/EersteStart.svelte';
   import Toast from './ui/Toast.svelte';
   import OpruimDialoog from './ui/OpruimDialoog.svelte';
   import { teVragen } from './storage/opruimen';
@@ -135,8 +134,6 @@
   </main>
 {:else if !inst}
   <main class="laden" aria-busy="true"></main>
-{:else if !inst.toestel || (!inst.master && inst.toestel !== 'chromebook')}
-  <EersteStart onKlaar={(i) => (inst = i)} />
 {:else if profielenActief(inst) && !profiel}
   {#if nieuwProfiel}
     <NieuwProfiel onKlaar={kiesProfiel} onAnnuleer={() => (nieuwProfiel = false)} />
@@ -144,7 +141,7 @@
     <ProfielKiezer {profielen} onGekozen={kiesProfiel} onNieuw={() => (nieuwProfiel = true)} onLeerkracht={() => (toonLeerkracht = true)} />
   {/if}
 {:else if collage}
-  <EditorScherm {collage} {opdracht} startPakket={pakket} toestel={inst.toestel} vooraf={editorAssets} onTerug={terug} />
+  <EditorScherm {collage} {opdracht} startPakket={pakket} toestel={inst.toestel ?? 'ipad'} vooraf={editorAssets} onTerug={terug} />
 {:else}
   <StartScherm onStart={start} {profiel} onWissel={profielenActief(inst) ? wissel : undefined} {collages} onOpen={open} onWis={wis} onOpenBestand={inst.toestel === 'ipad' ? undefined : openBestand} onLeerkracht={() => (toonLeerkracht = true)} />
 {/if}

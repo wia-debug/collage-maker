@@ -1,11 +1,11 @@
 <script lang="ts">
-  let { label, min, max, stap = 1, waarde, onWijzig }: { label: string; min: number; max: number; stap?: number; waarde: number; onWijzig: (v: number) => void } = $props();
+  let { label, min, max, stap = 1, waarde, onWijzig, onLive }: { label: string; min: number; max: number; stap?: number; waarde: number; onWijzig: (v: number) => void; onLive?: (v: number) => void } = $props();
   const id = $derived('schuif-' + label.toLowerCase().replace(/\s+/g, '-'));
 </script>
 
 <div class="schuif">
   <label for={id}>{label}</label>
-  <input {id} type="range" {min} {max} step={stap} value={waarde} onchange={(e) => onWijzig(Number(e.currentTarget.value))} />
+  <input {id} type="range" {min} {max} step={stap} value={waarde} oninput={(e) => onLive?.(Number(e.currentTarget.value))} onchange={(e) => onWijzig(Number(e.currentTarget.value))} />
 </div>
 
 <style>

@@ -21,12 +21,17 @@
   const verloop = $derived(achtergrond.soort === 'verloop' ? achtergrond : null);
   const patroon = $derived(achtergrond.soort === 'patroon' ? achtergrond : null);
 
+  function zet(a: Achtergrond) {
+    editor.select(null);
+    editor.setAchtergrond(a);
+  }
+
   async function kiesFoto() {
     const f = invoer?.files?.[0];
     if (!f) return;
     try {
       const id = await assets.addBlob(await verkleinAfbeelding(f));
-      editor.setAchtergrond({ soort: 'foto', assetId: id });
+      zet({ soort: 'foto', assetId: id });
     } catch (e) {
       toon(e instanceof ImportFout ? FOUTTEKST[e.code] : 'Er ging iets mis.', 'warning');
     }
@@ -42,18 +47,18 @@
 </div>
 
 {#if tab === 'kleur'}
-  <KleurPalet waarde={achtergrond.soort === 'kleur' ? achtergrond.kleur : null} onKies={(k) => k && editor.setAchtergrond({ soort: 'kleur', kleur: k })} />
+  <KleurPalet waarde={achtergrond.soort === 'kleur' ? achtergrond.kleur : null} onKies={(k) => k && zet({ soort: 'kleur', kleur: k })} />
 {:else if tab === 'verloop'}
   <div class="tegels">
     {#each VERLOPEN as [van, naar], i}
-      <button id="verloop-{i}" aria-label="Verloop {i + 1}" style:background="linear-gradient(135deg, {van}, {naar})" onclick={() => editor.setAchtergrond({ soort: 'verloop', van, naar, hoek: verloop?.hoek ?? 90 })}></button>
+      <button id="verloop-{i}" aria-label="Verloop {i + 1}" style:background="linear-gradient(135deg, {van}, {naar})" onclick={() => zet({ soort: 'verloop', van, naar, hoek: verloop?.hoek ?? 90 })}></button>
     {/each}
   </div>
   {#if verloop}
     <h3>Richting</h3>
     <div class="rij">
       {#each HOEKEN as h}
-        <button id="hoek-{h}" aria-label="Richting {h} graden" class:actief={verloop.hoek === h} onclick={() => editor.setAchtergrond({ ...verloop, hoek: h })}>
+        <button id="hoek-{h}" aria-label="Richting {h} graden" class:actief={verloop.hoek === h} onclick={() => zet({ ...verloop, hoek: h })}>
           <span class="pijl" style:transform="rotate({h}deg)"><Icon name="arrow-right" /></span>
         </button>
       {/each}
@@ -64,14 +69,14 @@
     {#each PATRONEN as p}
       <button id="patroon-{p.patroon}" aria-label={p.naam}
         style:background-image="url({maakPatroon(p.patroon, patroon?.kleur ?? '#FF6B6B', patroon?.achtergrondkleur ?? '#FFF8EE').toDataURL()})"
-        onclick={() => editor.setAchtergrond({ soort: 'patroon', patroon: p.patroon, kleur: patroon?.kleur ?? '#FF6B6B', achtergrondkleur: patroon?.achtergrondkleur ?? '#FFF8EE' })}></button>
+        onclick={() => zet({ soort: 'patroon', patroon: p.patroon, kleur: patroon?.kleur ?? '#FF6B6B', achtergrondkleur: patroon?.achtergrondkleur ?? '#FFF8EE' })}></button>
     {/each}
   </div>
   {#if patroon}
     <h3>Kleur patroon</h3>
-    <KleurPalet waarde={patroon.kleur} onKies={(k) => k && editor.setAchtergrond({ ...patroon, kleur: k })} />
+    <KleurPalet waarde={patroon.kleur} onKies={(k) => k && zet({ ...patroon, kleur: k })} />
     <h3>Kleur ondergrond</h3>
-    <KleurPalet waarde={patroon.achtergrondkleur} onKies={(k) => k && editor.setAchtergrond({ ...patroon, achtergrondkleur: k })} />
+    <KleurPalet waarde={patroon.achtergrondkleur} onKies={(k) => k && zet({ ...patroon, achtergrondkleur: k })} />
   {/if}
 {:else}
   <button id="achtergrond-foto" class="hoofd breed" onclick={() => { invoer!.value = ""; invoer!.click(); }}><Icon name="image" /> Kies een foto</button>

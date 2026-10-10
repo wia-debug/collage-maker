@@ -104,3 +104,51 @@ describe('editor-store', () => {
     expect(ed.get().collage.elementen.map((e) => e.id)).toEqual([a.id, b.id, c.id]);
   });
 });
+
+describe('voorbeeld (live schuif)', () => {
+  const opzet = () => {
+    const ed = createEditor(nieuweCollage('vierkant'));
+    const v = vorm();
+    ed.add(v);
+    return { ed, v };
+  };
+
+  it('vijf voorbeelden en een update zijn een undo-stap; undo geeft de basis terug', () => {
+    const { ed, v } = opzet();
+    for (const x of [200, 250, 300, 350, 400]) ed.voorbeeld(v.id, { x });
+    expect(ed.get().collage.elementen[0].x).toBe(400);
+    expect(ed.get().canUndo).toBe(true);
+    ed.update(v.id, { x: 400 });
+    expect(ed.get().collage.elementen[0].x).toBe(400);
+    ed.undo();
+    expect(ed.get().collage.elementen[0].x).toBe(100);
+    ed.undo();
+    expect(ed.get().collage.elementen).toHaveLength(0);
+    ed.redo();
+    ed.redo();
+    expect(ed.get().collage.elementen[0].x).toBe(400);
+  });
+
+  it('voorbeelden alleen zetten geen geschiedenis; annuleerVoorbeeld herstelt', () => {
+    const { ed, v } = opzet();
+    ed.undo();
+    ed.redo();
+    const voor = ed.get().collage;
+    ed.voorbeeld(v.id, { x: 900 });
+    ed.voorbeeld(v.id, { x: 950 });
+    expect(ed.get().collage.elementen[0].x).toBe(950);
+    ed.annuleerVoorbeeld();
+    expect(ed.get().collage).toBe(voor);
+    expect(ed.get().collage.elementen[0].x).toBe(100);
+    ed.annuleerVoorbeeld();
+    expect(ed.get().collage).toBe(voor);
+  });
+
+  it('undo na losse voorbeelden herstelt eerst de basis en gaat dan een stap terug', () => {
+    const { ed, v } = opzet();
+    ed.update(v.id, { x: 500 });
+    ed.voorbeeld(v.id, { x: 700 });
+    ed.undo();
+    expect(ed.get().collage.elementen[0].x).toBe(100);
+  });
+});

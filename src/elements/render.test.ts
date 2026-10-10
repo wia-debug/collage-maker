@@ -47,6 +47,12 @@ describe('renderElement', () => {
     expect(kind.width()).toBe(200);
   });
 
+  it('sticker past doorzichtigheid toe, standaard volledig zichtbaar', () => {
+    const s = maakSticker({ x: 0, y: 0, sticker: 'dieren/cat', kleur: '#FF0000', grootte: 200 });
+    expect(renderElement(s, leeg).opacity()).toBe(1);
+    expect(renderElement({ ...s, doorzichtigheid: 0.4 }, leeg).opacity()).toBe(0.4);
+  });
+
   it('onbekend type geeft een duidelijke fout (tot de renderer bestaat)', () => {
     const f = maakFoto({ x: 0, y: 0, breedte: 10, hoogte: 10, assetId: null });
     expect(() => renderElement({ ...f, type: 'onbekend' } as never, leeg)).toThrow('Geen renderer voor onbekend');

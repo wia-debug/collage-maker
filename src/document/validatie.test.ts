@@ -24,6 +24,14 @@ describe('leesCollage', () => {
     expect(fout(zonderVersie)).toBe('ongeldig');
   });
 
+  it('accepteert optionele motief en doorzichtigheid en weigert verkeerde typen', () => {
+    const foto = maakFoto({ x: 1, y: 1, breedte: 5, hoogte: 5, assetId: 'a' });
+    const sticker = maakSticker({ x: 1, y: 1, sticker: 'a/b', kleur: '#FFFFFF', grootte: 10 });
+    expect(fout({ ...geldig(), elementen: [{ ...foto, kader: { ...foto.kader, motief: 'hartjes' } }, { ...sticker, doorzichtigheid: 0.5 }] })).toBeNull();
+    expect(fout({ ...geldig(), elementen: [{ ...foto, kader: { ...foto.kader, motief: 3 } }] })).toBe('ongeldig');
+    expect(fout({ ...geldig(), elementen: [{ ...sticker, doorzichtigheid: 'half' }] })).toBe('ongeldig');
+  });
+
   it('herkent een nieuwere versie', () => {
     expect(fout({ ...geldig(), versie: SCHEMA_VERSIE + 1 })).toBe('nieuwer');
   });

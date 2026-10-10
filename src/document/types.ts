@@ -1,9 +1,10 @@
 export const SCHEMA_VERSIE = 1;
 
 export type Formaat = 'vierkant' | 'a4-liggend' | 'a4-staand' | 'poster';
-export type Pad = 'rechthoek' | 'rond' | 'hart' | 'ster' | 'wolk' | 'blob' | 'driehoek' | 'pijl';
+export type Pad = 'rechthoek' | 'rond' | 'hart' | 'ster' | 'wolk' | 'blob' | 'driehoek' | 'pijl' | 'ruit' | 'vijfhoek' | 'zeshoek';
 export type Masker = 'rechthoek' | 'rond' | 'hart' | 'ster' | 'wolk' | 'blob';
-export type KaderStijl = 'geen' | 'effen' | 'polaroid' | 'plakband' | 'gescheurd' | 'stippen' | 'film' | 'goud' | 'krijt' | 'dubbel' | 'schaduw' | 'golf' | 'sterren';
+export type KaderStijl = 'geen' | 'effen' | 'polaroid' | 'plakband' | 'plakband-boven' | 'plakband-hoeken' | 'gescheurd' | 'stippen' | 'film' | 'goud' | 'krijt' | 'dubbel' | 'schaduw' | 'golf' | 'sterren';
+export type PlakbandMotief = 'effen' | 'sterren' | 'strepen' | 'hartjes' | 'bolletjes';
 export type FilterNaam = 'normaal' | 'zwartwit' | 'sepia' | 'warm' | 'koel' | 'vrolijk' | 'vervaagd' | 'pixel' | 'strip' | 'negatief';
 export type Patroon = 'stippen' | 'strepen' | 'ruitjes' | 'sterren' | 'papier' | 'karton' | 'golfjes' | 'zigzag' | 'hartjes';
 
@@ -33,7 +34,7 @@ export interface FotoElement extends Basis {
   assetId: string | null;
   uitsnede: Uitsnede | null;
   masker: Masker;
-  kader: { stijl: KaderStijl; kleur: string };
+  kader: { stijl: KaderStijl; kleur: string; motief?: PlakbandMotief };
   filter: FilterNaam;
   helderheid: number; // -100..100
   contrast: number; // -100..100
@@ -66,7 +67,7 @@ export interface TekstElement extends Basis {
   wordart: WordArt | null;
 }
 
-export interface StickerElement extends Basis { type: 'sticker'; sticker: string; kleur: string }
+export interface StickerElement extends Basis { type: 'sticker'; sticker: string; kleur: string; doorzichtigheid?: number /* 0.1..1, afwezig = 1 */ }
 
 export interface VormElement extends Basis {
   type: 'vorm';

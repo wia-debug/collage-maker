@@ -3,6 +3,8 @@ import { maakHash } from './hash';
 import { ruimAutomatischOp } from './opruimen';
 import { leesInstellingen, schrijfInstellingen, type Instellingen, type Toestel } from './instellingen';
 
+export const STANDAARDCODE = '000000';
+
 interface E2eInstellingen { toestel: Toestel; profielenAan?: boolean; mastercode?: string }
 
 async function zaaiE2e(db: CollageDb): Promise<void> {
@@ -22,7 +24,10 @@ export async function opstart(db: CollageDb, search: string = location.search): 
   if (import.meta.env.MODE === 'e2e') await zaaiE2e(db);
   let inst = await leesInstellingen(db);
   const uitUrl = toestelUitUrl(search);
-  if (!inst.toestel && uitUrl) inst = await schrijfInstellingen(db, { toestel: uitUrl, profielenAan: false, master: null });
+  if (!inst.master) {
+    // Geen eerstestartscherm: standaard een gedeelde iPad (of het toestel uit de link) met de code 000000.
+    inst = await schrijfInstellingen(db, { toestel: inst.toestel ?? uitUrl ?? 'ipad', profielenAan: inst.profielenAan, master: await maakHash(STANDAARDCODE) });
+  }
   if (inst.toestel && inst.toestel !== 'chromebook') {
     try { await navigator.storage?.persist?.(); } catch { /* niet ondersteund */ }
     try { await ruimAutomatischOp(db); } catch { /* opruimen mag opstarten nooit blokkeren */ }

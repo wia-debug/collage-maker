@@ -250,7 +250,7 @@
       <button id="opdracht-sluit" aria-label="Opdracht verbergen" onclick={() => (toonOpdracht = false)}><Icon name="x" /></button>
     </div>
   {/if}
-  <div class="vak-tools"><GereedschapBalk actief={paneel} onKies={(p) => (paneel = paneel === p ? null : p)} /></div>
+  <div class="vak-tools"><GereedschapBalk actief={paneel} onKies={(p) => { if (p === 'achtergrond') editor.select(null); paneel = paneel === p ? null : p; }} /></div>
   <div class="vak-canvas" id="canvas-vlak" role="application" aria-label="Collage">
     <div class="canvas" bind:this={canvasEl}></div>
     {#if geselecteerd}<ContextBalk {editor} el={geselecteerd} onTekst={() => wijzigTekst(geselecteerd!.id)} onBijsnijden={() => openBijsnijden(geselecteerd!.id)} />{/if}

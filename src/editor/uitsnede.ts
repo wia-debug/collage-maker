@@ -34,3 +34,17 @@ export function klemUitsnede(r: Uitsnede, bron: { breedte: number; hoogte: numbe
     breedte, hoogte,
   };
 }
+
+// Grootste uitsnede met de verhouding doelB:doelH binnen de bron, gecentreerd op het midden van de huidige uitsnede.
+export function herUitsnede(huidig: Uitsnede | null, bron: { breedte: number; hoogte: number }, doelB: number, doelH: number): Uitsnede {
+  const ratio = doelB / doelH;
+  const breedte = Math.min(bron.breedte, bron.hoogte * ratio);
+  const hoogte = breedte / ratio;
+  const cx = huidig ? huidig.x + huidig.breedte / 2 : bron.breedte / 2;
+  const cy = huidig ? huidig.y + huidig.hoogte / 2 : bron.hoogte / 2;
+  return {
+    x: Math.min(bron.breedte - breedte, Math.max(0, cx - breedte / 2)),
+    y: Math.min(bron.hoogte - hoogte, Math.max(0, cy - hoogte / 2)),
+    breedte, hoogte,
+  };
+}

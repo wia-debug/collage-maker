@@ -103,10 +103,31 @@ test('masker en kader kiezen', async ({ page }) => {
   await page.click('#foto-kiezen');
   await (await chooser).setFiles({ name: 'foto.png', mimeType: 'image/png', buffer: await maakPng(page) });
   await page.click('#masker-hart');
-  await page.click('#kader-polaroid');
+  await page.click('#kader-goud');
   const [f] = await elementen(page);
   expect(f.masker).toBe('hart');
-  expect(f.kader.stijl).toBe('polaroid');
+  expect(f.kader.stijl).toBe('goud');
+});
+
+test('kaders die niet bij een masker passen zijn uitgeschakeld en vallen terug op effen', async ({ page }) => {
+  await openNieuweCollage(page);
+  await page.click('#tool-foto');
+  const chooser = page.waitForEvent('filechooser');
+  await page.click('#foto-kiezen');
+  await (await chooser).setFiles({ name: 'foto.png', mimeType: 'image/png', buffer: await maakPng(page) });
+  await page.click('#kader-polaroid');
+  expect((await elementen(page))[0].kader.stijl).toBe('polaroid');
+  await page.click('#masker-hart');
+  let [f] = await elementen(page);
+  expect(f.masker).toBe('hart');
+  expect(f.kader.stijl).toBe('effen');
+  await expect(page.locator('#kader-polaroid')).toBeDisabled();
+  await expect(page.locator('#kader-goud')).toBeEnabled();
+  await page.click('#masker-rechthoek');
+  await expect(page.locator('#kader-polaroid')).toBeEnabled();
+  await page.evaluate(() => window.__collage.editor.undo());
+  [f] = await elementen(page);
+  expect(f.masker).toBe('hart');
 });
 
 test('filter en helderheid kiezen', async ({ page }) => {
@@ -137,4 +158,17 @@ test('bijsnijden naar vierkant past de uitsnede en hoogte aan', async ({ page })
   const [f] = await elementen(page);
   expect(f.uitsnede.breedte).toBeCloseTo(f.uitsnede.hoogte, 3);
   expect(f.hoogte).toBe(f.breedte);
+});
+
+test('plakband hoeken met motief hartjes', async ({ page }) => {
+  await openNieuweCollage(page);
+  await page.click('#tool-foto');
+  const chooser = page.waitForEvent('filechooser');
+  await page.click('#foto-kiezen');
+  await (await chooser).setFiles({ name: 'foto.png', mimeType: 'image/png', buffer: await maakPng(page) });
+  await expect(page.locator('#motief-hartjes')).toHaveCount(0);
+  await page.click('#kader-plakband-hoeken');
+  await page.click('#motief-hartjes');
+  const [f] = await elementen(page);
+  expect(f.kader).toMatchObject({ stijl: 'plakband-hoeken', motief: 'hartjes' });
 });

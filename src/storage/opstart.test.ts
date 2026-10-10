@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { ruimTestDbOp } from './testhulp';
 import { maakDb, type CollageDb } from './db';
 import { opstart, toestelUitUrl } from './opstart';
-import { leesInstellingen } from './instellingen';
+import { leesInstellingen, schrijfInstellingen } from './instellingen';
+import { controleerCode } from './hash';
 import { nieuwId } from '../document/create';
 
 let db: CollageDb;
@@ -19,19 +20,35 @@ describe('toestelUitUrl', () => {
   });
 });
 
-describe('opstart met een toestel in de link', () => {
-  it('schrijft instellingen zonder mastercode als er nog geen zijn', async () => {
+describe('opstart zonder eerstestartscherm', () => {
+  it('schrijft standaard iPad, geen profielen en de code 000000', async () => {
+    const i = await opstart(db, '');
+    expect(i).toMatchObject({ toestel: 'ipad', profielenAan: false });
+    expect(i.master).not.toBeNull();
+    expect(await controleerCode('000000', i.master!)).toBe(true);
+    expect(await controleerCode('123456', i.master!)).toBe(false);
+    expect((await leesInstellingen(db)).toestel).toBe('ipad');
+  });
+
+  it('het toestel uit de link wint van de standaard, ook met de code 000000', async () => {
     const i = await opstart(db, '?toestel=chromebook');
-    expect(i).toEqual({ toestel: 'chromebook', profielenAan: false, master: null });
+    expect(i.toestel).toBe('chromebook');
+    expect(i.profielenAan).toBe(false);
+    expect(await controleerCode('000000', i.master!)).toBe(true);
     expect((await leesInstellingen(db)).toestel).toBe('chromebook');
   });
 
-  it('negeert de link als er al instellingen zijn', async () => {
-    await opstart(db, '?toestel=chromebook');
-    expect((await opstart(db, '?toestel=ipad')).toestel).toBe('chromebook');
+  it('negeert de link en laat de code staan als er al instellingen zijn', async () => {
+    const eerst = await opstart(db, '?toestel=chromebook');
+    const nu = await opstart(db, '?toestel=ipad');
+    expect(nu.toestel).toBe('chromebook');
+    expect(nu.master).toEqual(eerst.master);
   });
 
-  it('zonder link blijven de instellingen leeg', async () => {
-    expect((await opstart(db, '')).toestel).toBeNull();
+  it('vult een ontbrekende code aan zonder het toestel te veranderen', async () => {
+    await schrijfInstellingen(db, { toestel: 'pc', profielenAan: true });
+    const i = await opstart(db, '');
+    expect(i).toMatchObject({ toestel: 'pc', profielenAan: true });
+    expect(await controleerCode('000000', i.master!)).toBe(true);
   });
 });

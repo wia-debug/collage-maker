@@ -20,3 +20,12 @@ test('achtergrond: kleur, verloop met richting en patroon', async ({ page }) => 
   await page.click('#knop-ongedaan');
   expect((await achtergrond(page)).soort).toBe('verloop');
 });
+
+test('het achtergrondgereedschap haalt de selectie weg', async ({ page }) => {
+  await openNieuweCollage(page);
+  await page.click('#tool-vormen');
+  await page.click('#vorm-hart');
+  await expect(page.locator('#ctx-wissen')).toHaveCount(1);
+  await page.click('#tool-achtergrond');
+  await expect(page.locator('#ctx-wissen')).toHaveCount(0);
+});

@@ -8,11 +8,15 @@ import { renderAchtergrond } from '../elements/achtergrond';
 import type { Editor, EditorState } from './store';
 import { snap, type Gids } from './snap';
 import { alleenTransform } from './vergelijk';
+import { herUitsnede } from './uitsnede';
 import { pinchDelta, type Punt } from './pinch';
 
 export interface ControllerOpties { onVakTik?(id: string): void }
 
 export type Gereedschap = 'selecteer' | 'teken' | 'gum';
+
+const HOEK_ANKERS = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+const VRIJE_ANKERS = [...HOEK_ANKERS, 'middle-left', 'middle-right', 'top-center', 'bottom-center'];
 
 interface NodeInfo { el: Element; group: Konva.Group }
 
@@ -41,7 +45,7 @@ export class CanvasController {
       rotateEnabled: true,
       flipEnabled: false,
       keepRatio: true,
-      enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
+      enabledAnchors: HOEK_ANKERS,
       anchorSize: 28,
       anchorCornerRadius: 14,
       anchorStroke: '#5AA9F2',
@@ -219,7 +223,9 @@ export class CanvasController {
   protected updateTransformer(selectedId: string | null): void {
     const sel = selectedId ? this.nodes.get(selectedId) : undefined;
     this.transformer.nodes(sel && !sel.el.vergrendeld ? [sel.group] : []);
-    this.transformer.keepRatio(sel?.el.type !== 'vorm');
+    const vrij = sel?.el.type === 'foto' && !!sel.el.assetId;
+    this.transformer.keepRatio(sel?.el.type !== 'vorm' && !vrij);
+    this.transformer.enabledAnchors(vrij ? VRIJE_ANKERS : HOEK_ANKERS);
   }
 
   protected elementVan(target: Konva.Node): NodeInfo | undefined {
@@ -294,6 +300,18 @@ export class CanvasController {
     this.transformer.on('transformend', () => {
       const g = this.transformer.nodes()[0];
       if (!g) return;
+      const el = this.nodes.get(g.id())?.el;
+      const img = el?.type === 'foto' && el.assetId ? this.assets.image(el.assetId) : undefined;
+      if (el?.type === 'foto' && img) {
+        const b = Math.round(el.breedte * Math.abs(g.scaleX())), h = Math.round(el.hoogte * Math.abs(g.scaleY()));
+        const i = img as HTMLImageElement;
+        const bron = { breedte: i.naturalWidth || i.width, hoogte: i.naturalHeight || i.height };
+        this.editor.update(g.id(), {
+          x: g.x(), y: g.y(), rotatie: g.rotation(), breedte: b, hoogte: h, schaalX: 1, schaalY: 1,
+          uitsnede: herUitsnede(el.uitsnede, bron, b, h),
+        });
+        return;
+      }
       this.editor.update(g.id(), { x: g.x(), y: g.y(), rotatie: g.rotation(), schaalX: Math.abs(g.scaleX()), schaalY: g.scaleY() });
     });
 

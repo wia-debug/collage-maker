@@ -35,3 +35,23 @@ test('WordArt kiezen en vorm wijzigen', async ({ page }) => {
   await page.click('#wordart-geen');
   expect((await elementen(page))[0].wordart).toBeNull();
 });
+
+test('tekstgrootte past live aan tijdens het slepen en is een undo-stap', async ({ page }) => {
+  await openNieuweCollage(page);
+  await page.click('#tool-tekst');
+  await page.click('#tekst-nieuw');
+  await page.fill('#tekst-veld', 'Hallo');
+  await page.click('#tekst-klaar');
+  const [voor] = await elementen(page);
+  await page.$eval('#schuif-grootte', (el: HTMLInputElement) => {
+    el.value = '150';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  const [live] = await elementen(page);
+  expect(live.grootte).toBe(150);
+  expect(live.breedte).toBeGreaterThan(voor.breedte);
+  await page.$eval('#schuif-grootte', (el: HTMLInputElement) => el.dispatchEvent(new Event('change', { bubbles: true })));
+  expect((await elementen(page))[0].grootte).toBe(150);
+  await page.evaluate(() => window.__collage.editor.undo());
+  expect((await elementen(page))[0].grootte).toBe(voor.grootte);
+});

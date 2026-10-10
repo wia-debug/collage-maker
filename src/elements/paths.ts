@@ -22,6 +22,16 @@ function ster(): Cmd[] {
   return c;
 }
 
+// Regelmatige veelhoek, geschaald zodat hij de hele 0..1-doos vult.
+function veelhoek(n: number, start: number): Cmd[] {
+  const pts = Array.from({ length: n }, (_, i) => [Math.cos(start + (i * 2 * Math.PI) / n), Math.sin(start + (i * 2 * Math.PI) / n)]);
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const c: Cmd[] = pts.map((p, i) => [i === 0 ? 'M' : 'L', (p[0] - x0) / (x1 - x0), (p[1] - y0) / (y1 - y0)] as Cmd);
+  c.push(['Z']);
+  return c;
+}
+
 const PADEN: Record<Pad, Cmd[]> = {
   rechthoek: [['M', 0, 0], ['L', 1, 0], ['L', 1, 1], ['L', 0, 1], ['Z']],
   rond: [['E']],
@@ -41,6 +51,9 @@ const PADEN: Record<Pad, Cmd[]> = {
     ['C', 0.18, 0.94, 0, 0.75, 0.03, 0.48], ['C', 0.06, 0.2, 0.25, 0.05, 0.5, 0.03], ['Z'],
   ],
   driehoek: [['M', 0.5, 0], ['L', 1, 1], ['L', 0, 1], ['Z']],
+  ruit: [['M', 0.5, 0], ['L', 1, 0.5], ['L', 0.5, 1], ['L', 0, 0.5], ['Z']],
+  vijfhoek: veelhoek(5, -Math.PI / 2),
+  zeshoek: veelhoek(6, 0),
   pijl: [['M', 0, 0.35], ['L', 0.6, 0.35], ['L', 0.6, 0.1], ['L', 1, 0.5], ['L', 0.6, 0.9], ['L', 0.6, 0.65], ['L', 0, 0.65], ['Z']],
 };
 

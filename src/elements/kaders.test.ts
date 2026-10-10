@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { KADERS, kaderNodes, langsRand } from './kaders';
+import { MOTIEVEN, KADERS, KADER_ALLEEN_RECHTHOEK, kaderNodes, langsRand } from './kaders';
 import type { Masker } from '../document/types';
 
 const MASKERS: Masker[] = ['rechthoek', 'rond', 'hart', 'ster', 'wolk', 'blob'];
@@ -16,8 +16,8 @@ describe('langsRand', () => {
 });
 
 describe('kaderNodes', () => {
-  it('heeft 12 stijlen plus geen', () => {
-    expect(KADERS.map((k) => k.stijl)).toHaveLength(13);
+  it('heeft 14 stijlen plus geen', () => {
+    expect(KADERS.map((k) => k.stijl)).toHaveLength(15);
   });
 
   it('geen geeft niets', () => {
@@ -39,5 +39,31 @@ describe('kaderNodes', () => {
   it('kaders luisteren niet naar tikken', () => {
     const { voor, achter } = kaderNodes('sterren', '#FFC94D', 200, 150, 'rechthoek');
     for (const n of [...voor, ...achter]) expect(n.listening()).toBe(false);
+  });
+});
+
+describe('KADER_ALLEEN_RECHTHOEK', () => {
+  it('bevat alleen bestaande stijlen', () => {
+    const stijlen = KADERS.map((k) => k.stijl);
+    for (const s of KADER_ALLEEN_RECHTHOEK) expect(stijlen).toContain(s);
+    expect(KADER_ALLEEN_RECHTHOEK).toContain('polaroid');
+  });
+});
+
+describe('plakband met motief', () => {
+  const STIJLEN = ['plakband', 'plakband-boven', 'plakband-hoeken'] as const;
+  it.each(STIJLEN.flatMap((s) => MOTIEVEN.map((m) => [s, m.motief] as const)))('%s met motief %s geeft niet-luisterende nodes', (stijl, motief) => {
+    const { achter, voor } = kaderNodes(stijl, '#FF6B6B', 200, 150, 'rechthoek', motief);
+    expect(achter.length + voor.length).toBeGreaterThan(0);
+    for (const n of [...achter, ...voor]) expect(n.listening()).toBe(false);
+  });
+  it('plakband-hoeken heeft vier stukken, boven een, plakband twee', () => {
+    expect(kaderNodes('plakband-hoeken', '#FF6B6B', 200, 150, 'rechthoek').voor).toHaveLength(4);
+    expect(kaderNodes('plakband-boven', '#FF6B6B', 200, 150, 'rechthoek').voor).toHaveLength(1);
+    expect(kaderNodes('plakband', '#FF6B6B', 200, 150, 'rechthoek').voor).toHaveLength(2);
+  });
+  it('een motief gebruikt een patroonvulling', () => {
+    const [t] = kaderNodes('plakband-boven', '#FF6B6B', 200, 150, 'rechthoek', 'hartjes').voor;
+    expect(t.getAttr('fillPatternImage')).toBeInstanceOf(HTMLCanvasElement);
   });
 });

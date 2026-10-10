@@ -105,6 +105,31 @@ describe('CanvasController', () => {
     expect(el.gespiegeld).toBe(true);
   });
 
+  it('foto met afbeelding: vrij schalen past breedte, hoogte en uitsnede aan in een stap', () => {
+    const img = document.createElement('canvas');
+    img.width = 100; img.height = 100;
+    div = document.createElement('div');
+    div.style.cssText = 'width:800px;height:600px;position:fixed;left:0;top:0';
+    document.body.append(div);
+    const ed = createEditor(nieuweCollage('vierkant'));
+    const c2 = new CanvasController(div, ed, { image: () => img });
+    ctrl = c2;
+    const f = maakFoto({ x: 300, y: 300, breedte: 100, hoogte: 100, assetId: 'a' });
+    ed.add(f);
+    expect(transformer(c2).keepRatio()).toBe(false);
+    expect(transformer(c2).enabledAnchors()).toEqual(expect.arrayContaining(['middle-left', 'middle-right', 'top-center', 'bottom-center']));
+    c2.group(f.id)!.setAttrs({ scaleX: 2, scaleY: 1 });
+    transformer(c2).fire('transformend');
+    const el = ed.get().collage.elementen[0] as ReturnType<typeof maakFoto>;
+    expect(el.breedte).toBe(200);
+    expect(el.hoogte).toBe(100);
+    expect(el.schaalX).toBe(1);
+    expect(el.schaalY).toBe(1);
+    expect(el.uitsnede!.breedte / el.uitsnede!.hoogte).toBeCloseTo(2);
+    ed.undo();
+    expect(ed.get().collage.elementen[0].breedte).toBe(100);
+  });
+
   it('naarCanvas en naarScherm zijn elkaars inverse', () => {
     const { ctrl } = opzet();
     const p = ctrl.naarScherm(600, 300);

@@ -23,14 +23,15 @@ const isTekst: Controle = (v) => typeof v === 'string';
 const isBool: Controle = (v) => typeof v === 'boolean';
 const isTekstOfNull: Controle = (v) => v === null || typeof v === 'string';
 const isGetalLijst: Controle = (v) => Array.isArray(v) && v.every(isGetal);
+const isGetalOfAfwezig: Controle = (v) => v === undefined || isGetal(v);
 const isUitsnede: Controle = (v) => v === null || (isObj(v) && ['x', 'y', 'breedte', 'hoogte'].every((k) => isGetal(v[k])));
-const isKader: Controle = (v) => isObj(v) && isTekst(v.stijl) && isTekst(v.kleur);
+const isKader: Controle = (v) => isObj(v) && isTekst(v.stijl) && isTekst(v.kleur) && (v.motief === undefined || isTekst(v.motief));
 
 // Per elementtype / achtergrondsoort: veld -> controle.
 const ELEMENT_VELDEN: Record<string, Record<string, Controle>> = {
   foto: { assetId: isTekstOfNull, uitsnede: isUitsnede, masker: isTekst, kader: isKader, filter: isTekst, helderheid: isGetal, contrast: isGetal },
   tekst: { tekst: isTekst, lettertype: isTekst, kleur: isTekst, grootte: isGetal },
-  sticker: { sticker: isTekst, kleur: isTekst },
+  sticker: { sticker: isTekst, kleur: isTekst, doorzichtigheid: isGetalOfAfwezig },
   vorm: { vorm: isTekst, randDikte: isGetal, doorzichtigheid: isGetal },
   tekening: { gereedschap: isTekst, kleur: isTekst, dikte: isGetal, punten: isGetalLijst },
 };

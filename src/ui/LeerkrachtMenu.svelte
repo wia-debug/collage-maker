@@ -8,7 +8,7 @@
   import { controleerCode, maakHash } from '../storage/hash';
   import { profielenActief, schrijfInstellingen, type Instellingen, type Toestel } from '../storage/instellingen';
   import { lijstProfielen, PIN_LENGTE, PIN_SYMBOLEN, wisProfiel, zetPin, type Profiel } from '../storage/profielen';
-  import { wisAlles } from '../storage/opstart';
+  import { STANDAARDCODE, wisAlles } from '../storage/opstart';
   import { startTour, tourGezien } from '../tour/tour';
   import { toon } from './toast';
 
@@ -36,6 +36,7 @@
     open = true;
     fout = '';
     profielen = await lijstProfielen(db);
+    standaardCode = !!inst.master && (await controleerCode(STANDAARDCODE, inst.master));
     if (!tourGezien('leerkracht')) tourTimer = setTimeout(() => startTour('leerkracht'), 300);
   }
 
@@ -44,20 +45,23 @@
     else fout = 'Dat is niet de juiste code.';
   }
 
-  // Chromebook zonder mastercode: de eerste keer dat het menu opent, kiest de leerkracht er een.
-  let nieuweStap = $state<'code' | 'herhaal'>('code');
+  // Code wijzigen: twee keer dezelfde nieuwe code van 6 cijfers.
+  let codeStap = $state<'uit' | 'nieuw' | 'herhaal'>('uit');
+  let codeFout = $state('');
   let nieuweEerste = '';
-  function nieuweCodeKlaar(c: string) { nieuweEerste = c; fout = ''; nieuweStap = 'herhaal'; }
+  let standaardCode = $state(false);
+  function nieuweCodeKlaar(c: string) { nieuweEerste = c; codeFout = ''; codeStap = 'herhaal'; }
   async function nieuweHerhaal(c: string) {
-    if (c !== nieuweEerste) { fout = 'De codes zijn niet gelijk. Probeer opnieuw.'; nieuweStap = 'code'; return; }
+    if (c !== nieuweEerste) { codeFout = 'De codes zijn niet gelijk. Probeer opnieuw.'; codeStap = 'nieuw'; return; }
     try {
       const i = await schrijfInstellingen(db, { master: await maakHash(c) });
-      open = true;
+      codeStap = 'uit';
+      standaardCode = false;
       onInstellingen(i);
-      await openMenu();
+      toon('Nieuwe code bewaard.', 'check-circle');
     } catch {
-      fout = 'Bewaren lukte niet. Probeer het nog eens.';
-      nieuweStap = 'code';
+      codeFout = 'Bewaren lukte niet. Probeer het nog eens.';
+      codeStap = 'nieuw';
     }
   }
 
@@ -91,14 +95,15 @@
   <div class="menu" role="dialog" aria-modal="true" aria-labelledby="leerkracht-titel">
     <button id="leerkracht-sluit" class="sluit" aria-label="Sluiten" onclick={onSluit}><Icon name="x" /></button>
     <h1 id="leerkracht-titel">Voor de leerkracht</h1>
-    {#if !open && !inst.master}
-      {#if nieuweStap === 'code'}
-        <CijferCode titel="Kies een code van 6 cijfers" {fout} onKlaar={nieuweCodeKlaar} />
-      {:else}
-        <CijferCode titel="Typ de code nog een keer" onKlaar={nieuweHerhaal} />
-      {/if}
-    {:else if !open}
+    {#if !open}
       <CijferCode titel="Typ je code" {fout} onKlaar={codeKlaar} />
+    {:else if codeStap !== 'uit'}
+      {#if codeStap === 'nieuw'}
+        <CijferCode titel="Kies een nieuwe code van 6 cijfers" fout={codeFout} onKlaar={nieuweCodeKlaar} />
+      {:else}
+        <CijferCode titel="Typ de nieuwe code nog een keer" onKlaar={nieuweHerhaal} />
+      {/if}
+      <button id="code-annuleer" onclick={() => (codeStap = 'uit')}>Annuleer</button>
     {:else if pinVoor}
       <p>Nieuwe geheime code voor <strong>{pinVoor.naam}</strong></p>
       {#if pinStap === 'pin'}
@@ -108,6 +113,13 @@
       {/if}
       <button onclick={() => (pinVoor = null)}>Annuleer</button>
     {:else}
+      <section>
+        <h2>Code wijzigen</h2>
+        {#if standaardCode}
+          <p id="standaardcode-waarschuwing" class="waarschuwing" role="alert">Wijzig de standaardcode 000000, anders kunnen kinderen hier ook in.</p>
+        {/if}
+        <button id="code-wijzigen" onclick={() => { codeStap = 'nieuw'; codeFout = ''; }}><Icon name="lock" /> Code wijzigen</button>
+      </section>
       <section>
         <h2>Toestel</h2>
         <div class="rij">
@@ -181,4 +193,5 @@
   .naam { flex: 1; display: flex; align-items: center; gap: 8px; font-weight: 700; }
   li button { padding: 0 14px; background: var(--creme); }
   .gevaar { color: #c0392b; }
+  .waarschuwing { margin: 0; font-weight: 700; color: #9a3412; }
 </style>

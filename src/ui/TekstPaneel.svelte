@@ -19,6 +19,11 @@
     editor.update(tekst.id, tekstStijlPatch(tekst, patch, FORMATEN[editor.get().collage.formaat].breedte));
   }
 
+  function live(patch: Partial<TekstElement>) {
+    if (!tekst) return;
+    editor.voorbeeld(tekst.id, tekstStijlPatch(tekst, patch, FORMATEN[editor.get().collage.formaat].breedte));
+  }
+
   const VORMEN: { vorm: WordArtVorm; naam: string }[] = [
     { vorm: 'recht', naam: 'Recht' }, { vorm: 'boog-omhoog', naam: 'Boog' }, { vorm: 'boog-omlaag', naam: 'Lach' },
     { vorm: 'cirkel', naam: 'Rond' }, { vorm: 'golf', naam: 'Golf' },
@@ -39,7 +44,7 @@
       <button id="font-{l.id}" class:actief={tekst.lettertype === l.id} style:font-family={l.familie} onclick={() => zet({ lettertype: l.id })}>{l.naam}</button>
     {/each}
   </div>
-  <Schuif label="Grootte" min={16} max={300} waarde={tekst.grootte} onWijzig={(v) => zet({ grootte: v })} />
+  <Schuif label="Grootte" min={16} max={300} waarde={tekst.grootte} onLive={(v) => live({ grootte: v })} onWijzig={(v) => zet({ grootte: v })} />
   <div class="rij">
     <button id="tekst-vet" aria-label="Vet" aria-pressed={tekst.vet} class:actief={tekst.vet} onclick={() => zet({ vet: !tekst.vet })}><Icon name="text-b" /></button>
     <button id="tekst-schuin" aria-label="Schuin" aria-pressed={tekst.schuin} class:actief={tekst.schuin} onclick={() => zet({ schuin: !tekst.schuin })}><Icon name="text-italic" /></button>
@@ -51,7 +56,7 @@
   <KleurPalet waarde={tekst.kleur} onKies={(k) => k && zet({ kleur: k })} />
   <h3>Rand</h3>
   <KleurPalet waarde={tekst.omlijning?.kleur ?? null} metGeen onKies={(k) => zet({ omlijning: k ? { kleur: k, dikte: tekst.omlijning?.dikte ?? Math.max(2, Math.round(tekst.grootte / 15)) } : null })} />
-  <Schuif label="Regelafstand" min={0.8} max={2} stap={0.1} waarde={tekst.regelafstand} onWijzig={(v) => zet({ regelafstand: v })} />
+  <Schuif label="Regelafstand" min={0.8} max={2} stap={0.1} waarde={tekst.regelafstand} onLive={(v) => live({ regelafstand: v })} onWijzig={(v) => zet({ regelafstand: v })} />
   <button id="tekst-schaduw" class="breed" aria-pressed={tekst.schaduw} class:actief={tekst.schaduw} onclick={() => zet({ schaduw: !tekst.schaduw })}>Schaduw</button>
   <h3>Ballon</h3>
   <KleurPalet waarde={tekst.ballon} metGeen onKies={(k) => zet({ ballon: k })} />

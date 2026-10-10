@@ -1,5 +1,4 @@
 import { test, expect, metInstellingen, openNieuweCollage } from './helpers';
-import { test as zonderPresets, expect as verwacht } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
 async function zaaiCollage(page: Page, naam: string, dagenOud: number) {
@@ -123,43 +122,4 @@ test('M8: een collage die niet meer bestaat geeft een melding en verdwijnt uit d
   await knop.click();
   await expect(page.getByText('Deze collage bestaat niet meer.')).toBeVisible();
   await expect(knop).toHaveCount(0);
-});
-
-zonderPresets('I3: Chromebook-link slaat de eerste start over; leerkrachtmenu vraagt eerst een code', async ({ page }) => {
-  await page.addInitScript(() => {
-    try { localStorage.setItem('collage-tours-gezien', JSON.stringify(['editor', 'leerkracht'])); } catch { /* opslag geblokkeerd */ }
-  });
-  const typ = async (code: string) => { for (const c of code) await page.click(`#cijfer-${c}`); };
-  await page.goto('/?toestel=chromebook');
-  await verwacht(page.locator('#start-nieuw')).toBeVisible();
-  await verwacht(page.getByRole('heading', { name: 'Welkom bij Collagemaker' })).toHaveCount(0);
-  await page.click('#knop-leerkracht');
-  await verwacht(page.getByText('Kies een code van 6 cijfers')).toBeVisible();
-  await typ('123456');
-  await typ('654321');
-  await verwacht(page.getByText('De codes zijn niet gelijk. Probeer opnieuw.')).toBeVisible();
-  await typ('246810');
-  await typ('246810');
-  await verwacht(page.locator('#alles-wissen')).toBeVisible();
-  await page.click('#leerkracht-sluit');
-  await page.reload();
-  await verwacht(page.locator('#start-nieuw')).toBeVisible();
-  await page.click('#knop-leerkracht');
-  await verwacht(page.getByText('Typ je code')).toBeVisible();
-});
-
-zonderPresets('I1: eerste start toont een melding als bewaren mislukt en de knoppen blijven bruikbaar', async ({ page }) => {
-  const typ = async (code: string) => { for (const c of code) await page.click(`#cijfer-${c}`); };
-  await page.goto('/');
-  await page.waitForFunction(() => (window as any).__opslag);
-  await page.evaluate(() => {
-    const t = (window as any).__opslag.db.instellingen;
-    t.put = () => Promise.reject(new Error('vol'));
-  });
-  await page.click('#eerste-verder');
-  await typ('123456');
-  await typ('123456');
-  await page.click('#toestel-kies-chromebook');
-  await verwacht(page.getByText('Bewaren lukte niet. Probeer het nog eens.')).toBeVisible();
-  await verwacht(page.locator('#toestel-kies-chromebook')).toBeEnabled();
 });

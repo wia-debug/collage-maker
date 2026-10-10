@@ -8,5 +8,6 @@
   "text-align-center", "text-align-right", "chat-circle", "warning", "info", "check-circle",
   "frame-corners", "magic-wand", "sliders", "paw-print", "rocket", "soccer-ball", "leaf", "cake",
   "tree", "pizza", "car", "palette", "gradient", "dots-nine",
-  "floppy-disk", "folder-open", "users", "gear", "backspace", "desktop", "device-tablet", "laptop", "user-plus"
+  "floppy-disk", "folder-open", "users", "gear", "backspace", "desktop", "device-tablet", "laptop", "user-plus",
+  "diamond", "pentagon", "hexagon", "rectangle"
 ]

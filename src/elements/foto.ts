@@ -49,7 +49,7 @@ export function renderFoto(el: FotoElement, ctx: RenderCtx): Konva.Group {
     binnen.clipFunc((c) => tracePad(c as unknown as PathCtx, el.masker, el.breedte, el.hoogte));
   }
   binnen.add(node);
-  const { achter, voor } = leeg ? { achter: [], voor: [] } : kaderNodes(el.kader.stijl, el.kader.kleur, el.breedte, el.hoogte, el.masker);
+  const { achter, voor } = leeg ? { achter: [], voor: [] } : kaderNodes(el.kader.stijl, el.kader.kleur, el.breedte, el.hoogte, el.masker, el.kader.motief);
   g.add(...achter);
   g.add(binnen);
   if (leeg) g.add(plusTeken(el));

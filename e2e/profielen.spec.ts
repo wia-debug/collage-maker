@@ -49,3 +49,16 @@ test('PC met profielen toont de profielkeuze', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Wie ben jij?' })).toBeVisible();
 });
+
+for (const [naam, breedte, hoogte] of [['liggend', 1194, 834], ['staand', 834, 1194], ['1366x768', 1366, 768]] as const) {
+  test(`nieuw profiel past zonder scrollen (${naam})`, async ({ page }) => {
+    await page.setViewportSize({ width: breedte, height: hoogte });
+    await metInstellingen(page, { toestel: 'ipad' });
+    await page.goto('/');
+    await page.click('#profiel-nieuw');
+    await page.fill('#profiel-naam', 'Noor');
+    await expect(page.locator('#profiel-verder')).toBeInViewport({ ratio: 1 });
+    await expect(page.locator('.palet .kleur').last()).toBeInViewport({ ratio: 1 });
+    await expect(page.locator('.palet .kleur').first()).toBeInViewport({ ratio: 1 });
+  });
+}

@@ -1,22 +1,60 @@
 import Konva from 'konva';
 import type { ShapeConfig } from 'konva/lib/Shape';
-import type { KaderStijl, Masker } from '../document/types';
+import type { KaderStijl, Masker, PlakbandMotief } from '../document/types';
 import { tracePad, type PathCtx } from './paths';
 import { mulberry32 } from './patronen-rng';
 
 export const KADERS: { stijl: KaderStijl; naam: string }[] = [
   { stijl: 'geen', naam: 'Geen' }, { stijl: 'effen', naam: 'Rand' }, { stijl: 'polaroid', naam: 'Polaroid' },
-  { stijl: 'plakband', naam: 'Plakband' }, { stijl: 'gescheurd', naam: 'Gescheurd' }, { stijl: 'stippen', naam: 'Stippen' },
+  { stijl: 'plakband', naam: 'Plakband 2' }, { stijl: 'plakband-boven', naam: 'Plakband boven' }, { stijl: 'plakband-hoeken', naam: 'Plakband hoeken' }, { stijl: 'gescheurd', naam: 'Gescheurd' }, { stijl: 'stippen', naam: 'Stippen' },
   { stijl: 'film', naam: 'Film' }, { stijl: 'goud', naam: 'Goud' }, { stijl: 'krijt', naam: 'Krijt' },
   { stijl: 'dubbel', naam: 'Dubbel' }, { stijl: 'schaduw', naam: 'Schaduw' }, { stijl: 'golf', naam: 'Golf' },
   { stijl: 'sterren', naam: 'Sterren' },
 ];
+
+// Deze kaders passen alleen om een rechthoekige foto; bij een andere vorm zijn ze uitgeschakeld.
+export const KADER_ALLEEN_RECHTHOEK: KaderStijl[] = ['polaroid', 'plakband', 'plakband-boven', 'plakband-hoeken', 'gescheurd', 'film', 'golf', 'sterren'];
 
 export const MASKERS: { masker: Masker; naam: string; icoon: string }[] = [
   { masker: 'rechthoek', naam: 'Vierkant', icoon: 'square' }, { masker: 'rond', naam: 'Rond', icoon: 'circle' },
   { masker: 'hart', naam: 'Hart', icoon: 'heart' }, { masker: 'ster', naam: 'Ster', icoon: 'star' },
   { masker: 'wolk', naam: 'Wolk', icoon: 'cloud' }, { masker: 'blob', naam: 'Vlek', icoon: 'drop' },
 ];
+
+export const PLAKBAND_STIJLEN: KaderStijl[] = ['plakband', 'plakband-boven', 'plakband-hoeken'];
+export const MOTIEVEN: { motief: PlakbandMotief; naam: string }[] = [
+  { motief: 'effen', naam: 'Effen' }, { motief: 'sterren', naam: 'Sterren' }, { motief: 'strepen', naam: 'Strepen' },
+  { motief: 'hartjes', naam: 'Hartjes' }, { motief: 'bolletjes', naam: 'Bolletjes' },
+];
+
+const tegels = new Map<string, HTMLCanvasElement>();
+
+// Kleine herhaalbare tegel (24 px) voor plakband met een motief.
+export function plakbandTegel(kleur: string, motief: PlakbandMotief): HTMLCanvasElement {
+  const key = `${kleur}|${motief}`;
+  const klaar = tegels.get(key);
+  if (klaar) return klaar;
+  const t = 24;
+  const c = document.createElement('canvas');
+  c.width = c.height = t;
+  const x = c.getContext('2d')!;
+  x.fillStyle = kleur;
+  x.fillRect(0, 0, t, t);
+  x.fillStyle = 'rgba(255,255,255,0.85)';
+  x.strokeStyle = 'rgba(255,255,255,0.85)';
+  switch (motief) {
+    case 'sterren': x.save(); x.translate(5, 5); tracePad(x as unknown as PathCtx, 'ster', 14, 14); x.fill(); x.restore(); break;
+    case 'hartjes': x.save(); x.translate(5, 6); tracePad(x as unknown as PathCtx, 'hart', 14, 13); x.fill(); x.restore(); break;
+    case 'bolletjes': x.beginPath(); x.arc(12, 12, 5, 0, Math.PI * 2); x.fill(); break;
+    case 'strepen':
+      x.lineWidth = 5;
+      for (const o of [-t, 0, t]) { x.beginPath(); x.moveTo(o, 0); x.lineTo(o + t, t); x.stroke(); }
+      break;
+    case 'effen': break;
+  }
+  tegels.set(key, c);
+  return c;
+}
 
 const GOUD = [0, '#B8860B', 0.25, '#FFE58A', 0.5, '#D4A017', 0.75, '#FFF3B0', 1, '#B8860B'];
 
@@ -53,7 +91,7 @@ function vlak(masker: Masker, w: number, h: number, cfg: ShapeConfig): Konva.Sha
   });
 }
 
-export function kaderNodes(stijl: KaderStijl, kleur: string, w: number, h: number, masker: Masker): { achter: Konva.Shape[]; voor: Konva.Shape[] } {
+export function kaderNodes(stijl: KaderStijl, kleur: string, w: number, h: number, masker: Masker, motief: PlakbandMotief = 'effen'): { achter: Konva.Shape[]; voor: Konva.Shape[] } {
   const d = Math.max(6, Math.min(w, h) * 0.04);
   const niets = { achter: [], voor: [] };
   if (stijl === 'geen') return niets;
@@ -76,9 +114,16 @@ export function kaderNodes(stijl: KaderStijl, kleur: string, w: number, h: numbe
       return { achter: [], voor: [rand({ stroke: kleur, strokeWidth: d * 2 })] };
     case 'polaroid':
       return { achter: [new Konva.Rect({ ...stil, x: -d * 1.5, y: -d * 1.5, width: w + d * 3, height: h + d * 7.5, fill: kleur, shadowColor: 'rgba(0,0,0,0.25)', shadowBlur: d * 2, shadowOffset: { x: 0, y: d * 0.6 } })], voor: [] };
-    case 'plakband': {
-      const tape = (x: number, rot: number) => new Konva.Rect({ ...stil, x, y: 0, width: w * 0.3, height: d * 3, offsetX: w * 0.15, offsetY: d * 1.5, rotation: rot, fill: kleur, opacity: 0.7 });
-      return { achter: [], voor: [tape(0, -40), tape(w, 40)] };
+    case 'plakband':
+    case 'plakband-boven':
+    case 'plakband-hoeken': {
+      const tape = (x: number, y: number, rot: number) => new Konva.Rect({
+        ...stil, x, y, width: w * 0.3, height: d * 3, offsetX: w * 0.15, offsetY: d * 1.5, rotation: rot, opacity: 0.8,
+        ...(motief === 'effen' ? { fill: kleur } : { fillPatternImage: plakbandTegel(kleur, motief) as unknown as HTMLImageElement, fillPatternRepeat: 'repeat' }),
+      });
+      if (stijl === 'plakband-boven') return { achter: [], voor: [tape(w / 2, 0, -3)] };
+      if (stijl === 'plakband-hoeken') return { achter: [], voor: [tape(0, 0, -40), tape(w, 0, 40), tape(0, h, 40), tape(w, h, -40)] };
+      return { achter: [], voor: [tape(0, 0, -40), tape(w, 0, 40)] };
     }
     case 'gescheurd': {
       const m = d * 1.8, j = d * 0.9;

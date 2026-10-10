@@ -10,6 +10,8 @@ export type Richting = 'voor' | 'achter' | 'voorste' | 'achterste';
 export function createEditor(initial: Collage) {
   const history = new History<Collage>(initial);
   let selectedId: string | null = null;
+  // Collage zoals die was voor het eerste voorbeeld (live schuifwaarde); null als er geen voorbeeld loopt.
+  let voorbeeldBasis: Collage | null = null;
 
   const snapshot = (): EditorState => ({ collage: history.present, selectedId, canUndo: history.canUndo, canRedo: history.canRedo });
   const store = writable<EditorState>(snapshot());
@@ -19,7 +21,14 @@ export function createEditor(initial: Collage) {
     store.set(snapshot());
   }
 
+  function herstelBasis(): void {
+    if (!voorbeeldBasis) return;
+    history.present = voorbeeldBasis;
+    voorbeeldBasis = null;
+  }
+
   function commit(patch: Partial<Collage>): void {
+    herstelBasis();
     history.push({ ...history.present, ...patch, gewijzigd: Date.now() });
     emit();
   }
@@ -34,8 +43,19 @@ export function createEditor(initial: Collage) {
   return {
     state: { subscribe: store.subscribe } as Readable<EditorState>,
     get: snapshot,
-    load(c: Collage): void { history.reset(c); selectedId = null; emit(); },
+    load(c: Collage): void { voorbeeldBasis = null; history.reset(c); selectedId = null; emit(); },
     add,
+    // Toont een tussenwaarde zonder geschiedenis: de volgende update (of annuleerVoorbeeld) vertrekt vanaf de basis.
+    voorbeeld(id: string, patch: Partial<Element>): void {
+      if (!voorbeeldBasis) voorbeeldBasis = history.present;
+      history.present = { ...history.present, elementen: els().map((e) => (e.id === id ? ({ ...e, ...patch } as Element) : e)) };
+      emit();
+    },
+    annuleerVoorbeeld(): void {
+      if (!voorbeeldBasis) return;
+      herstelBasis();
+      emit();
+    },
     update(id: string, patch: Partial<Element>): void {
       commit({ elementen: els().map((e) => (e.id === id ? ({ ...e, ...patch } as Element) : e)) });
     },
@@ -63,8 +83,8 @@ export function createEditor(initial: Collage) {
     setAchtergrond(a: Achtergrond): void { commit({ achtergrond: a }); },
     rename(naam: string): void { commit({ naam }); },
     select(id: string | null): void { selectedId = id; emit(); },
-    undo(): void { history.undo(); emit(); },
-    redo(): void { history.redo(); emit(); },
+    undo(): void { herstelBasis(); history.undo(); emit(); },
+    redo(): void { herstelBasis(); history.redo(); emit(); },
   };
 }
 

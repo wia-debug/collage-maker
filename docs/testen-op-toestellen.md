@@ -2,7 +2,7 @@
 
 1. Start op de pc: `npm run dev:lan`. De terminal toont een adres zoals `https://192.168.1.20:5173`. Gebruik dit alleen op een netwerk dat je vertrouwt.
 2. Open dat adres op het toestel. De browser waarschuwt voor het certificaat: kies "Toch doorgaan" (op iPad: "Toon details" → "Bezoek deze website").
-3. Eerste start: kies een code van 6 cijfers en het toesteltype.
+3. Eerste start: er is geen instelscherm. De app start als gedeelde iPad (met profielen) en de leerkrachtcode is `000000`. Wijzig die meteen in het leerkrachtmenu ("Code wijzigen"); tot dan toont het menu een waarschuwing. Het toesteltype wijzig je ook daar.
 
 `dev:lan` is geschikt voor opslag, profielen en bestanden. Voor de controles over offline gebruik, "Zet op beginscherm" en "App installeren" werkt het niet: de dev-server heeft geen service worker en een zelfgetekend certificaat blokkeert service workers. Test die onderdelen met een build die over vertrouwd https wordt geserveerd:
 - een Cloudflare Pages preview, of
@@ -31,7 +31,7 @@ PC:
 
 ## Chromebooks in de klas
 
-Op Chromebooks wordt alle sitedata bij elke aanmelding gewist, dus de eerste-startvragen zouden elke sessie terugkomen. Gebruik daarom de link `https://<adres>/?toestel=chromebook` als bladwijzer of als startpagina, via het beheer van de school (Google Admin: startpagina of vastgezette bladwijzer). Die link stelt het toesteltype in en gaat meteen naar het beginscherm. Een mastercode is dan niet nodig; het leerkrachtmenu vraagt de eerste keer in een sessie om een code te kiezen.
+Op Chromebooks wordt alle sitedata bij elke aanmelding gewist, dus de instellingen zouden elke sessie terugvallen op de standaard (gedeelde iPad, code `000000`). Gebruik daarom de link `https://<adres>/?toestel=chromebook` als bladwijzer of als startpagina, via het beheer van de school (Google Admin: startpagina of vastgezette bladwijzer). Die link stelt het toesteltype in en gaat meteen naar het beginscherm. Omdat de sitedata telkens gewist wordt, is de leerkrachtcode op een Chromebook altijd `000000`; een gewijzigde code blijft daar niet bewaard.
 
 ## Code vergeten
 
