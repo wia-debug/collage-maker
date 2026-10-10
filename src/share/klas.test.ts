@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { DeelFout } from './fouten';
-import { bewaakKlasOntvanger, klasPeerId, maakKlasRelay, nieuwKlasId, schoneNaam, startKlasOntvanger, stuurNaarLeerkracht } from './klas';
+import { bewaakKlasOntvanger, klasPeerId, maakKlasRelay, nieuwKlasId, schoneNaam, startKlasOntvanger, stuurNaarLeerkracht, verstuurKlasDirect } from './klas';
 import type { ConnLike, PeerFabriek, PeerLike } from './peer';
 
 type Luisteraars = Record<string, ((...a: any[]) => void)[]>;
@@ -40,7 +40,7 @@ describe('klas', () => {
     const peer = nepPeer();
     const fabriek: PeerFabriek = () => peer;
     const binnen: string[] = [];
-    const o = startKlasOntvanger(['star', 'heart', 'cloud', 'drop'], { fabriek, onInzending: (naam) => binnen.push(naam) });
+    const o = startKlasOntvanger(['star', 'heart', 'cloud', 'drop'], { fabriek, onInzending: async (naam) => { binnen.push(naam); return true; } });
     peer.open();
     await o.klaar;
     const a = nepConn(), b = nepConn(), kapot = nepConn();
@@ -48,6 +48,7 @@ describe('klas', () => {
     a.geef({ soort: 'klas', naam: 'Lies', bestand: zip() });
     b.geef({ soort: 'klas', naam: 'Lies', bestand: zip() });
     kapot.geef({ soort: 'klas', naam: '', bestand: zip() });
+    await new Promise((r) => setTimeout(r, 0));
     expect(binnen).toEqual(['Lies', 'Lies']);
     expect(a.verstuurd).toEqual([{ soort: 'ontvangen' }]);
     expect(kapot.verstuurd).toEqual([]);
@@ -58,7 +59,7 @@ describe('klas', () => {
   it('ontvanger: een webrtc-fout van één verbinding na open meldt niets', async () => {
     const peer = nepPeer();
     const fouten: string[] = [];
-    const o = startKlasOntvanger(['star', 'heart', 'cloud', 'drop'], { fabriek: () => peer, onInzending: () => {}, onFout: (f) => fouten.push(f.code) });
+    const o = startKlasOntvanger(['star', 'heart', 'cloud', 'drop'], { fabriek: () => peer, onInzending: async () => true, onFout: (f) => fouten.push(f.code) });
     peer.open();
     await o.klaar;
     peer.fout('webrtc');
@@ -75,7 +76,7 @@ describe('klas', () => {
     const tik = () => new Promise((r) => setTimeout(r, 5));
     const b = bewaakKlasOntvanger(['star', 'heart', 'cloud', 'drop'], {
       fabriek: (id) => { ids.push(id); const p = nepPeer(); peers.push(p); return p; },
-      onInzending: () => {}, onVerbinding: (ok) => status.push(ok), wachttijd: () => 0,
+      onInzending: async () => true, onVerbinding: (ok) => status.push(ok), wachttijd: () => 0,
     });
     peers[0].open();
     await b.klaar;
@@ -106,7 +107,7 @@ describe('klas', () => {
     const peers: ReturnType<typeof nepPeer>[] = [];
     const tik = () => new Promise((r) => setTimeout(r, 5));
     const b = bewaakKlasOntvanger(['star', 'heart', 'cloud', 'drop'], {
-      fabriek: () => { const p = nepPeer(); peers.push(p); return p; }, onInzending: () => {}, wachttijd: () => 0,
+      fabriek: () => { const p = nepPeer(); peers.push(p); return p; }, onInzending: async () => true, wachttijd: () => 0,
     });
     peers[0].fout('network');
     await expect(b.klaar).rejects.toMatchObject({ code: 'geen-verbinding' });
@@ -120,7 +121,7 @@ describe('klas', () => {
 
   it('bezette code geeft code-bezet', async () => {
     const peer = nepPeer();
-    const o = startKlasOntvanger(['star', 'star', 'star', 'star'], { fabriek: () => peer, onInzending: () => {} });
+    const o = startKlasOntvanger(['star', 'star', 'star', 'star'], { fabriek: () => peer, onInzending: async () => true });
     peer.fout('unavailable-id');
     await expect(o.klaar).rejects.toMatchObject({ code: 'code-bezet' });
   });
@@ -165,5 +166,69 @@ describe('klas', () => {
     expect((gezien[1].init!.headers as Record<string, string>)['X-Sleutel']).toBe('tok');
     expect((await r.haal('abcd', 'a'.repeat(16), 'tok', f))?.naam).toBe('Lies');
     expect(await r.haal('abcd', 'a'.repeat(16), 'tok', f)).toBeNull();
+  });
+  it('ontvanger: bevestigt pas na een bewaarde inzending; fout als bewaren mislukt; tweede bericht genegeerd', async () => {
+    const peer = nepPeer();
+    const binnen: string[] = [];
+    let laatBewaren!: (ok: boolean) => void;
+    const o = startKlasOntvanger(['star', 'heart', 'cloud', 'drop'], {
+      fabriek: () => peer,
+      onInzending: (naam) => { binnen.push(naam); return new Promise<boolean>((r) => (laatBewaren = r)); },
+    });
+    peer.open();
+    await o.klaar;
+    const a = nepConn();
+    peer.verbind(a);
+    a.geef({ soort: 'klas', naam: 'Lies', bestand: zip() });
+    a.geef({ soort: 'klas', naam: 'Lies', bestand: zip() });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(binnen).toEqual(['Lies']);
+    expect(a.verstuurd).toEqual([]);
+    laatBewaren(true);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(a.verstuurd).toEqual([{ soort: 'ontvangen' }]);
+    const b = nepConn();
+    peer.verbind(b);
+    b.geef({ soort: 'klas', naam: 'Bo', bestand: zip() });
+    await new Promise((r) => setTimeout(r, 0));
+    laatBewaren(false);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(b.verstuurd).toEqual([{ soort: 'fout' }]);
+    const c = nepConn();
+    peer.verbind(c);
+    c.geef({ soort: 'klas', naam: 'Kas', bestand: zip() });
+    await new Promise((r) => setTimeout(r, 0));
+    laatBewaren(Promise.reject(new Error('vol')) as unknown as boolean);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(c.verstuurd).toEqual([{ soort: 'fout' }]);
+    o.stop();
+  });
+
+  it('versturen direct: fout van de leerkracht wordt niet-bewaard', async () => {
+    const l: Luisteraars = {};
+    const conn = { on(e: string, cb: any) { (l[e] ??= []).push(cb); }, send() { queueMicrotask(() => { for (const cb of l.data ?? []) cb({ soort: 'fout' }); }); }, close() {} } as any;
+    const pl: Luisteraars = {};
+    const peer = {
+      on(e: string, cb: any) { (pl[e] ??= []).push(cb); },
+      connect() { queueMicrotask(() => { for (const cb of l.open ?? []) cb(); }); return conn; },
+      destroy() {},
+    } as any;
+    const belofte = verstuurKlasDirect('kidsklas-abcd', 'Lies', new Blob(['x']), { fabriek: () => peer, timeoutMs: 5000 });
+    for (const cb of pl.open ?? []) cb('id');
+    await expect(belofte).rejects.toMatchObject({ code: 'niet-bewaard' });
+  });
+
+  it('relay: lijst geeft weg bij 404 en null bij andere fouten; sluit stuurt DELETE met token', async () => {
+    const gezien: { url: string; init?: RequestInit }[] = [];
+    const antwoorden = [new Response(null, { status: 404 }), new Response(null, { status: 500 }), new Response(null, { status: 204 })];
+    const f = (async (url: string, init?: RequestInit) => { gezien.push({ url, init }); return antwoorden.shift()!; }) as unknown as typeof fetch;
+    const r = maakKlasRelay('https://r.test');
+    expect(await r.lijst('abcd', 'tok', f)).toBe('weg');
+    expect(await r.lijst('abcd', 'tok', f)).toBeNull();
+    await r.sluit('abcd', 'tok', f);
+    expect(gezien[2].url).toBe('https://r.test/class/abcd');
+    expect(gezien[2].init?.method).toBe('DELETE');
+    expect((gezien[2].init!.headers as Record<string, string>)['X-Sleutel']).toBe('tok');
+    await r.sluit('abcd', 'tok', (async () => { throw new Error('weg'); }) as unknown as typeof fetch);
   });
 });

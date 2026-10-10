@@ -54,10 +54,12 @@ export function maakKlasRelay(adres: string | null, slaap: (ms: number) => Promi
         return;
       }
     },
-    async lijst(sleutel: string, token: string, f: typeof fetch = fetch): Promise<{ id: string; naam: string }[] | null> {
+    /** `'weg'`: de map bestaat niet (meer) op de server; null: een andere fout. */
+    async lijst(sleutel: string, token: string, f: typeof fetch = fetch): Promise<{ id: string; naam: string }[] | 'weg' | null> {
       if (!basis) return null;
       try {
         const r = await f(`${basis}/class/${sleutel}`, { method: 'GET', headers: { 'X-Sleutel': token } });
+        if (r.status === 404) return 'weg';
         if (!r.ok) return null;
         const d = (await r.json()) as unknown;
         return Array.isArray(d) ? d.filter((x): x is { id: string; naam: string } => typeof x?.id === 'string' && typeof x?.naam === 'string') : null;
@@ -74,6 +76,11 @@ export function maakKlasRelay(adres: string | null, slaap: (ms: number) => Promi
         try { naam = decodeURIComponent(r.headers.get('X-Naam') ?? ''); } catch { /* blijft leeg */ }
         return { naam: schoneNaam(naam) ?? 'Zonder naam', pakket };
       } catch { return null; }
+    },
+    /** Sluit de klasmap (wist alles wat er nog in zit). Fouten worden genegeerd. */
+    async sluit(sleutel: string, token: string, f: typeof fetch = fetch): Promise<void> {
+      if (!basis) return;
+      try { await f(`${basis}/class/${sleutel}`, { method: 'DELETE', headers: { 'X-Sleutel': token }, keepalive: true }); } catch { /* best effort */ }
     },
   };
 }
@@ -109,7 +116,11 @@ export function verstuurKlasDirect(doelId: string, naam: string, pakket: Blob, o
           timer = setTimeout(() => einde(new DeelFout('geen-verbinding')), OVERDRACHT_MS);
           try { conn.send({ soort: 'klas', naam, bestand }); } catch { einde(new DeelFout('geen-verbinding')); }
         });
-        conn.on('data', (d) => { if ((d as { soort?: string })?.soort === 'ontvangen') einde(); });
+        conn.on('data', (d) => {
+          const soort = (d as { soort?: string })?.soort;
+          if (soort === 'ontvangen') einde();
+          else if (soort === 'fout') einde(new DeelFout('niet-bewaard'));
+        });
         conn.on('close', () => einde(new DeelFout('geen-verbinding')));
         conn.on('error', () => einde(new DeelFout('geen-verbinding')));
       } catch { einde(new DeelFout('geen-verbinding')); }
@@ -152,7 +163,7 @@ export const standaardWachttijd = (poging: number): number => Math.min(3000 * 2 
  * er opnieuw geprobeerd, met oplopende wachttijd, tot `stop()`; ook als de eerste poging mislukte.
  */
 export function bewaakKlasOntvanger(code: string[], o: {
-  onInzending(naam: string, pakket: Blob): void; onVerbinding?(ok: boolean): void; fabriek?: PeerFabriek; wachttijd?: (poging: number) => number;
+  onInzending(naam: string, pakket: Blob): Promise<boolean>; onVerbinding?(ok: boolean): void; fabriek?: PeerFabriek; wachttijd?: (poging: number) => number;
 }): { klaar: Promise<void>; bewaak(): void; stop(): void } {
   const wachttijd = o.wachttijd ?? standaardWachttijd;
   let weg = false;
@@ -195,7 +206,8 @@ export function bewaakKlasOntvanger(code: string[], o: {
   };
 }
 
-export function startKlasOntvanger(code: string[], o: { onInzending(naam: string, pakket: Blob): void; onFout?(f: DeelFout): void; fabriek?: PeerFabriek }): { klaar: Promise<void>; stop(): void } {
+/** `onInzending` geeft true als de collage bewaard is; pas dan krijgt het kind een bevestiging. */
+export function startKlasOntvanger(code: string[], o: { onInzending(naam: string, pakket: Blob): Promise<boolean>; onFout?(f: DeelFout): void; fabriek?: PeerFabriek }): { klaar: Promise<void>; stop(): void } {
   const peer = (o.fabriek ?? standaardFabriek)(klasPeerId(code));
   let geopend = false;
   const klaar = new Promise<void>((resolve, reject) => {
@@ -209,14 +221,18 @@ export function startKlasOntvanger(code: string[], o: { onInzending(naam: string
     });
   });
   peer.on('connection', (conn) => {
-    conn.on('data', (d) => {
+    let behandeld = false;
+    conn.on('data', async (d) => {
+      if (behandeld) return; // één inzending per verbinding
       const b = d as { soort?: string; naam?: unknown; bestand?: ArrayBuffer | Uint8Array };
       const naam = typeof b?.naam === 'string' ? schoneNaam(b.naam) : null;
       const bestand = b?.bestand;
       const geldig = b?.soort === 'klas' && naam && (bestand instanceof ArrayBuffer || ArrayBuffer.isView(bestand)) && bestand.byteLength <= MAX_PAKKET;
       if (!geldig) { try { conn.close(); } catch { /* al weg */ } return; }
-      try { conn.send({ soort: 'ontvangen' }); } catch { /* verbinding weg */ }
-      try { o.onInzending(naam, new Blob([bestand as BlobPart])); } catch { /* een falende handler breekt de ontvanger niet */ }
+      behandeld = true;
+      let bewaard = false;
+      try { bewaard = await o.onInzending(naam, new Blob([bestand as BlobPart])); } catch { /* een falende handler breekt de ontvanger niet */ }
+      try { conn.send({ soort: bewaard ? 'ontvangen' : 'fout' }); } catch { /* verbinding weg */ }
       setTimeout(() => { try { conn.close(); } catch { /* al weg */ } }, 1000);
     });
   });

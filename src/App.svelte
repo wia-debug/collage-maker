@@ -97,7 +97,17 @@
   let profielen = $state.raw<Profiel[]>([]);
   let nieuwProfiel = $state(false);
   let toonLeerkracht = $state(false);
-  let scherm = $state<'klas' | 'galerij' | null>(null);
+  // Het klasscherm blijft open (en ontvangt verder) terwijl de galerij erboven ligt.
+  let klasOpen = $state(false);
+  let galerijOpen = $state(false);
+  let klasScherm = $state<{ stop(): Promise<void> } | undefined>(undefined);
+
+  async function openKopie(p: Blob) {
+    if (inst && profielenActief(inst) && !profiel) { toon('Kies eerst een profiel. Dan kan je de collage openen.', 'info'); return; }
+    galerijOpen = false;
+    if (klasOpen) { await klasScherm?.stop(); klasOpen = false; }
+    await openBestand(p);
+  }
   let toonOntvang = $state(false);
 
   async function sluitLeerkracht() {
@@ -159,20 +169,20 @@
   <OntvangDialoog {inst} onOpen={(p) => { toonOntvang = false; void openBestand(p); }} onSluit={() => (toonOntvang = false)} />
 {/if}
 {#if toonLeerkracht && inst}
-  <LeerkrachtMenu {inst} onInstellingen={nieuweInstellingen} onSluit={sluitLeerkracht} onKlas={async () => { await sluitLeerkracht(); scherm = 'klas'; }} onGalerij={async () => { await sluitLeerkracht(); scherm = 'galerij'; }} />
+  <LeerkrachtMenu {inst} onInstellingen={nieuweInstellingen} onSluit={sluitLeerkracht} onKlas={async () => { await sluitLeerkracht(); klasOpen = true; }} onGalerij={async () => { await sluitLeerkracht(); galerijOpen = true; }} />
 {/if}
-{#if scherm === 'klas' && inst}
-  <KlasOntvangScherm {inst} onGalerij={() => (scherm = 'galerij')} onSluit={() => (scherm = null)} />
+{#if klasOpen && inst}
+  <KlasOntvangScherm bind:this={klasScherm} {inst} onGalerij={() => (galerijOpen = true)} onSluit={() => (klasOpen = false)} />
 {/if}
-{#if scherm === 'galerij' && inst}
-  <Galerij {inst} onOpenKopie={(p) => { scherm = null; void openBestand(p); }} onSluit={() => (scherm = null)} />
+{#if galerijOpen && inst}
+  <Galerij {inst} onOpenKopie={(p) => void openKopie(p)} onSluit={() => (galerijOpen = false)} />
 {/if}
 {#if teOpruimen.length && !collage}
   <OpruimDialoog collages={teOpruimen} onJa={() => void opruimenJa()} onLater={() => (teOpruimen = [])} />
 {/if}
 <Toast />
 <Confetti />
-<svelte:window onpointerdown={ontgrendelGeluid} />
+<svelte:window onpointerdown={ontgrendelGeluid} onpointerup={ontgrendelGeluid} ontouchend={ontgrendelGeluid} />
 
 <style>
   .laden { min-height: 100dvh; }

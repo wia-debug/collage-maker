@@ -1,4 +1,4 @@
-import { test, expect, openLeerkrachtMenu } from './helpers';
+import { test, expect, openLeerkrachtMenu, metInstellingen, elementen } from './helpers';
 import type { Page } from '@playwright/test';
 
 async function zaai(page: Page, namen: string[]) {
@@ -73,4 +73,30 @@ test('diavoorstelling speelt automatisch verder', async ({ page }, info) => {
   await expect(page.locator('#dia-naam')).toHaveText('Omar');
   await page.clock.runFor(5_100);
   await expect(page.locator('#dia-naam')).toHaveText('Lies');
+});
+
+test('open als kopie: met profielen eerst een profiel kiezen', async ({ page }, info) => {
+  test.skip(info.project.name !== 'chromebook', 'Playwright-WebKit op Windows kan geen Blob in IndexedDB bewaren; getest in Chromium.');
+
+  await metInstellingen(page, { toestel: 'pc', profielenAan: true, mastercode: '123456' });
+  await page.goto('/');
+  await zaai(page, ['Lies']);
+  await openLeerkrachtMenu(page);
+  await page.click('#galerij-open');
+  await page.locator('.inzending-open').first().click();
+  await expect(page.getByText('Kies eerst een profiel. Dan kan je de collage openen.')).toBeVisible();
+  await expect(page.locator('#galerij')).toBeVisible();
+  await page.click('#galerij-sluit');
+
+  await page.click('#profiel-nieuw');
+  await page.fill('#profiel-naam', 'Mila');
+  await page.click('#profiel-verder');
+  for (const s of ['star', 'heart', 'cloud', 'star', 'heart', 'cloud']) await page.click(`#symbool-${s}`);
+  await expect(page.locator('#start-nieuw')).toBeVisible();
+  await openLeerkrachtMenu(page);
+  await page.click('#galerij-open');
+  await page.locator('.inzending-open').first().click();
+  await expect(page.locator('#galerij')).toHaveCount(0);
+  await page.waitForFunction(() => window.__collage?.controller);
+  expect(await elementen(page)).toHaveLength(1);
 });

@@ -38,9 +38,11 @@ export async function nieuwToestel(browser: import('@playwright/test').Browser, 
 
 // Nagebootste relay met brievenbussen, zoals de Worker; beide toestellen delen dezelfde opslag in het testproces.
 // POST opent een brievenbus (token), PUT kan alleen in een open lege brievenbus, GET vraagt het token.
-// Klasmappen op /__relay/class/: POST opent (token), PUT met X-Naam alleen in een open map, GET lijst/inzending met token; ophalen wist.
+// Klasmappen op /__relay/class/: POST opent (token), PUT met X-Naam alleen in een open map, GET lijst/inzending met token; ophalen wist;
+// DELETE met token sluit de map. `faalKlasOpen`: zoveel eerste POST's op een klasmap antwoorden 500.
 // Later geregistreerde routes gaan voor, dus dit overschrijft de standaard-404 uit richtIn.
-export async function nepRelay(pages: Page[]): Promise<Map<string, Buffer>> {
+export async function nepRelay(pages: Page[], o: { faalKlasOpen?: number } = {}): Promise<Map<string, Buffer>> {
+  let faalKlasOpen = o.faalKlasOpen ?? 0;
   const opslag = new Map<string, Buffer>();
   const bussen = new Map<string, string>();
   let teller = 0;
@@ -81,6 +83,7 @@ export async function nepRelay(pages: Page[]): Promise<Map<string, Buffer>> {
       const [, , code, id] = delen;
       const token = klasMappen.get(code);
       if (v.method() === 'POST' && !id) {
+        if (faalKlasOpen > 0) { faalKlasOpen--; await route.fulfill({ status: 500 }); return; }
         if (token) { await route.fulfill({ status: 409 }); return; }
         const t = `klas${++teller}`.padEnd(32, '0');
         klasMappen.set(code, t);
@@ -98,6 +101,12 @@ export async function nepRelay(pages: Page[]): Promise<Map<string, Buffer>> {
       }
       if (token && (await v.headerValue('x-sleutel')) !== token) { await route.fulfill({ status: 403 }); return; }
       if (!token) { await route.fulfill({ status: 404 }); return; }
+      if (v.method() === 'DELETE' && !id) {
+        klasMappen.delete(code);
+        klasData.delete(code);
+        await route.fulfill({ status: 204 });
+        return;
+      }
       const map = klasData.get(code)!;
       if (!id) {
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([...map].map(([i, d]) => ({ id: i, naam: decodeURIComponent(d.naam) }))) });

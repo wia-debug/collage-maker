@@ -15,6 +15,21 @@ async function stuur(kind: Page, code: string[], naam: string) {
   await kind.click('#deel-naam-stuur');
 }
 
+// Kind op een netwerk waar de PeerServer niet bereikbaar is; mag via de server sturen.
+async function geblokkeerdKind(kind: Page) {
+  await kind.addInitScript(() => {
+    (window as any).__peerOpties = { host: 'localhost', port: 9, path: '/', secure: false, debug: 0 };
+    (window as any).__deelTimeoutMs = 1500;
+  });
+  await kind.goto('/');
+  await openLeerkrachtMenu(kind);
+  await kind.click('#cloud-kind');
+  await kind.click('#leerkracht-sluit');
+  await kind.click('#start-nieuw');
+  await kind.click('#formaat-vierkant');
+  await kind.waitForFunction(() => window.__collage?.controller);
+}
+
 test('leerkracht ontvangt rechtstreeks van twee kinderen', async ({ page, browser }) => {
   await page.goto('/');
   await openLeerkrachtMenu(page);
@@ -47,17 +62,56 @@ test('geblokkeerd netwerk: via de klasmap op de server', async ({ page, browser 
   await page.click('#klas-ontvangen');
   const code = await leesKlasCode(page);
 
-  await kind.addInitScript(() => {
-    (window as any).__peerOpties = { host: 'localhost', port: 9, path: '/', secure: false, debug: 0 };
-    (window as any).__deelTimeoutMs = 1500;
-  });
-  await kind.goto('/');
-  await openLeerkrachtMenu(kind);
-  await kind.click('#cloud-kind');
-  await kind.click('#leerkracht-sluit');
-  await kind.click('#start-nieuw');
-  await kind.click('#formaat-vierkant');
-  await kind.waitForFunction(() => window.__collage?.controller);
+  await geblokkeerdKind(kind);
+  await stuur(kind, code, 'Lies');
+  await kind.click('#toestemming-ja');
+  await expect(kind.locator('#deel-klaar')).toContainText('via de server', { timeout: 20_000 });
+  await expect(page.locator('#klas-teller')).toHaveText('1 collage ontvangen', { timeout: 20_000 });
+});
+
+test('na Stop is de klasmap dicht: geblokkeerd kind vindt de leerkracht niet', async ({ page, browser }) => {
+  const kind = await nieuwToestel(browser);
+  await nepRelay([page, kind]);
+  await page.goto('/');
+  await openLeerkrachtMenu(page);
+  await page.click('#klas-ontvangen');
+  const code = await leesKlasCode(page);
+  await page.click('#klas-stop');
+  await expect(page.locator('#klas-scherm')).toHaveCount(0);
+
+  await geblokkeerdKind(kind);
+  await stuur(kind, code, 'Lies');
+  await kind.click('#toestemming-ja');
+  await expect(kind.getByRole('alert')).toContainText('Ik vind de leerkracht niet. Klopt de code?', { timeout: 20_000 });
+});
+
+test('galerij vanuit het klasscherm: het klasscherm blijft ontvangen', async ({ page, browser }) => {
+  await page.goto('/');
+  await openLeerkrachtMenu(page);
+  await page.click('#klas-ontvangen');
+  const code = await leesKlasCode(page);
+  await page.click('#klas-galerij');
+  await expect(page.locator('#galerij')).toBeVisible();
+
+  const kind = await nieuwToestel(browser);
+  await openNieuweCollage(kind);
+  await stuur(kind, code, 'Lies');
+  await expect(kind.locator('#deel-klaar')).toContainText('Verstuurd naar de leerkracht!', { timeout: 20_000 });
+  await page.click('#galerij-sluit');
+  await expect(page.locator('#klas-teller')).toHaveText('1 collage ontvangen');
+});
+
+test('klasmap openen mislukt eerst: wordt opnieuw geprobeerd', async ({ page, browser }) => {
+  const kind = await nieuwToestel(browser);
+  await nepRelay([page, kind], { faalKlasOpen: 1 });
+  await page.goto('/');
+  await openLeerkrachtMenu(page);
+  await page.click('#klas-ontvangen');
+  const code = await leesKlasCode(page);
+  await expect(page.locator('#klas-netwerk')).toBeVisible();
+  await expect(page.locator('#klas-netwerk')).toHaveCount(0, { timeout: 15_000 });
+
+  await geblokkeerdKind(kind);
   await stuur(kind, code, 'Lies');
   await kind.click('#toestemming-ja');
   await expect(kind.locator('#deel-klaar')).toContainText('via de server', { timeout: 20_000 });

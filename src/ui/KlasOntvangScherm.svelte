@@ -9,6 +9,7 @@
   import { bewaarInzending } from '../storage/inzendingen';
   import { db } from '../storage/db';
   import { speel } from '../feedback/geluid';
+  import { toon } from './toast';
 
   let { inst, onGalerij, onSluit }: { inst: Instellingen; onGalerij: () => void; onSluit: () => void } = $props();
 
@@ -20,82 +21,150 @@
   let pollWeg = $state(false);
   const netwerk = $derived(peerWeg || pollWeg);
   let mislukt = $state(false);
+  let stoppen = $state(false);
   const relay = klasRelay();
   const viaServer = relay.ingesteld && untrack(() => inst.cloudDelen) !== 'nooit';
   let ontvanger: { stop(): void } | null = null;
   let pollTimer: ReturnType<typeof setTimeout> | undefined;
+  let lopend: Promise<void> | null = null;
   let laatsteNieuw = Date.now();
   let weg = false;
+  let gestopt = false;
+  let sleutel = '';
+  let token: string | null = null;
+  let gesloten = false;
   const gehaald = new Set<string>();
-  let wake: { release(): Promise<void> } | null = null;
+  let wake: { released?: boolean; release(): Promise<void> } | null = null;
 
-  async function nieuw(naam: string, pakket: Blob) {
+  /** true als de collage bewaard is (dan krijgt het kind een bevestiging). */
+  async function nieuw(naam: string, pakket: Blob): Promise<boolean> {
     try {
       await bewaarInzending(db, naam, pakket);
-    } catch { return; /* ongeldig of niet te bewaren: overslaan */ }
-    if (weg) return;
+    } catch {
+      toon('Een collage kon niet bewaard worden. Is het toestel vol?', 'warning');
+      return false;
+    }
+    if (weg) return true;
     namen = [naam, ...namen];
     laatsteNieuw = Date.now();
     speel('plop');
+    return true;
   }
 
-  function startPolling(sleutel: string, token: string) {
-    const volgende = () => {
-      const wachtMs = Date.now() - laatsteNieuw > 10 * 60_000 ? 10_000 : 5000;
-      pollTimer = setTimeout(async () => {
-        const lijst = await relay.lijst(sleutel, token);
-        if (weg) return;
-        if (!lijst) pollWeg = true;
-        else {
-          pollWeg = false;
-          for (const item of lijst) {
-            if (gehaald.has(item.id)) continue;
-            const r = await relay.haal(sleutel, item.id, token);
-            if (weg) return;
-            if (r) { gehaald.add(item.id); await nieuw(r.naam, r.pakket); }
-          }
-        }
-        if (!weg) volgende();
-      }, wachtMs);
-    };
-    volgende();
+  async function haalAlles(lijst: { id: string }[]) {
+    for (const item of lijst) {
+      if (gehaald.has(item.id)) continue;
+      const r = await relay.haal(sleutel, item.id, token!);
+      if (r) { gehaald.add(item.id); await nieuw(r.naam, r.pakket); }
+    }
+  }
+
+  // Eén ronde: zonder token de map (opnieuw) proberen te openen, met token de lijst ophalen.
+  async function tik() {
+    if (!token) {
+      const r = await relay.open(sleutel);
+      if (gestopt) {
+        if (r && r !== 'bezet') { token = r; if (weg && !gesloten) { gesloten = true; void relay.sluit(sleutel, r); } }
+        return;
+      }
+      if (r && r !== 'bezet') { token = r; pollWeg = false; } else pollWeg = true;
+      return;
+    }
+    const lijst = await relay.lijst(sleutel, token);
+    if (gestopt) return;
+    if (lijst === 'weg') { token = null; pollWeg = true; return; }
+    if (!lijst) { pollWeg = true; return; }
+    pollWeg = false;
+    await haalAlles(lijst);
+  }
+
+  function plan() {
+    if (gestopt) return;
+    const wachtMs = Date.now() - laatsteNieuw > 10 * 60_000 ? 10_000 : 5000;
+    pollTimer = setTimeout(() => {
+      lopend = tik().catch(() => {}).finally(() => { lopend = null; plan(); });
+    }, wachtMs);
   }
 
   async function begin() {
     for (let poging = 0; poging < MAX_POGINGEN && !weg; poging++) {
       const c = nieuweCode();
-      const o = bewaakKlasOntvanger(c, { onInzending: (naam, pakket) => void nieuw(naam, pakket), onVerbinding: (ok) => (peerWeg = !ok) });
+      const o = bewaakKlasOntvanger(c, { onInzending: nieuw, onVerbinding: (ok) => (peerWeg = !ok) });
       ontvanger = o;
       let peerOk = true;
       try { await o.klaar; } catch (e) {
         if (e instanceof DeelFout && e.code === 'code-bezet') { o.stop(); continue; }
         peerOk = false; // niet stoppen: na bewaak() blijft de ontvanger het opnieuw proberen
       }
-      let token: string | null = null;
+      let t: string | null = null;
       if (viaServer) {
         const r = await relay.open(codeNaarSleutel(c));
         if (r === 'bezet') { o.stop(); continue; }
-        token = r;
+        t = r;
       }
-      if (weg) { o.stop(); return; }
-      if (!peerOk && !token) { o.stop(); mislukt = true; return; }
+      if (weg) { o.stop(); if (t) void relay.sluit(codeNaarSleutel(c), t); return; }
+      // Lukt de peer of de map nog niet: toch de code tonen; de peer en de map worden opnieuw geprobeerd.
       code = c;
+      sleutel = codeNaarSleutel(c);
+      token = t;
       peerWeg = !peerOk;
+      pollWeg = viaServer && !t;
       o.bewaak();
-      if (token) startPolling(codeNaarSleutel(c), token);
+      if (viaServer) plan();
       return;
     }
     if (!weg) mislukt = true;
   }
 
-  onMount(async () => {
-    try { wake = await (navigator as unknown as { wakeLock?: { request(t: 'screen'): Promise<{ release(): Promise<void> }> } }).wakeLock?.request('screen') ?? null; } catch { wake = null; }
+  /** Stop netjes: alles wat nog op de server staat ophalen en bewaren, dan de map sluiten. */
+  export async function stop(): Promise<void> {
+    if (stoppen) return;
+    stoppen = true;
+    gestopt = true;
+    ontvanger?.stop();
+    clearTimeout(pollTimer);
+    try {
+      await lopend;
+      if (token) {
+        const lijst = await relay.lijst(sleutel, token);
+        if (Array.isArray(lijst)) await haalAlles(lijst);
+        gesloten = true;
+        await relay.sluit(sleutel, token);
+      }
+    } catch { /* toch stoppen */ }
+  }
+
+  async function stopKnop() {
+    if (stoppen) return;
+    await stop();
+    onSluit();
+  }
+
+  async function vraagWake() {
+    try {
+      const w = await (navigator as unknown as { wakeLock?: { request(t: 'screen'): Promise<{ released?: boolean; release(): Promise<void> }> } }).wakeLock?.request('screen');
+      if (!w) return;
+      if (weg) { void w.release().catch(() => {}); return; }
+      wake = w;
+    } catch { /* geen wake lock */ }
+  }
+  function zichtbaar() {
+    if (document.visibilityState === 'visible' && (!wake || wake.released)) void vraagWake();
+  }
+
+  onMount(() => {
+    void vraagWake();
+    document.addEventListener('visibilitychange', zichtbaar);
     void begin();
   });
   onDestroy(() => {
     weg = true;
+    gestopt = true;
     ontvanger?.stop();
     clearTimeout(pollTimer);
+    document.removeEventListener('visibilitychange', zichtbaar);
+    // Zonder Stop (bv. de app gaat dicht): de map toch proberen te sluiten.
+    if (token && !gesloten) { gesloten = true; void relay.sluit(sleutel, token); }
     void wake?.release().catch(() => {});
   });
 </script>
@@ -104,8 +173,8 @@
   <h1 id="klas-titel">Klas ontvangen</h1>
   {#if mislukt}
     <p class="fout" role="alert"><Icon name="warning" /> Ontvangen lukt niet op dit netwerk.</p>
-  {:else if !code.length}
-    <p role="status">Even geduld...</p>
+  {:else if !code.length || stoppen}
+    <p id="klas-wacht" role="status">Even geduld...</p>
   {:else}
     <div id="klas-code" class="code" aria-label="Klascode">
       {#each code as s}<span class="vak" data-symbool={s} aria-label={SYMBOOL_NAMEN[s] ?? s}><Icon name={s} size={96} /></span>{/each}
@@ -117,8 +186,8 @@
   {#if netwerk}<p id="klas-netwerk" class="zacht"><Icon name="wifi-slash" /> Even geen verbinding. Ik blijf proberen.</p>{/if}
   {#if inst.toestel === 'chromebook'}<p id="klas-chromebook" class="zacht"><Icon name="warning" /> Inzendingen verdwijnen bij uitloggen. Download ze als ZIP of PDF.</p>{/if}
   <div class="knoppen">
-    <button id="klas-galerij" class="hoofd" onclick={onGalerij}><Icon name="images" /> Naar de galerij</button>
-    <button id="klas-stop" onclick={onSluit}><Icon name="x" /> Stop</button>
+    <button id="klas-galerij" class="hoofd" disabled={stoppen} onclick={onGalerij}><Icon name="images" /> Naar de galerij</button>
+    <button id="klas-stop" disabled={stoppen} onclick={stopKnop}><Icon name="x" /> Stop</button>
   </div>
 </div>
 
