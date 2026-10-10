@@ -47,8 +47,8 @@
   {/if}
   <h3>Rand</h3>
   <KleurPalet waarde={vorm.rand} metGeen={vorm.vorm !== 'lijn'} onKies={(k) => editor.update(vorm.id, { rand: k })} />
-  <Schuif label="Dikte" min={2} max={40} waarde={vorm.randDikte} onLive={(v) => editor.voorbeeld(vorm.id, { randDikte: v })} onWijzig={(v) => editor.update(vorm.id, { randDikte: v })} />
-  <Schuif label="Zichtbaar" min={10} max={100} waarde={Math.round(vorm.doorzichtigheid * 100)} onLive={(v) => editor.voorbeeld(vorm.id, { doorzichtigheid: v / 100 })} onWijzig={(v) => editor.update(vorm.id, { doorzichtigheid: v / 100 })} />
+  <Schuif label="Dikte" min={2} max={40} waarde={vorm.randDikte} onLive={(v) => editor.voorbeeld(vorm.id, { randDikte: v })} onAnnuleer={() => editor.annuleerVoorbeeld()} onWijzig={(v) => editor.update(vorm.id, { randDikte: v })} />
+  <Schuif label="Zichtbaar" min={10} max={100} waarde={Math.round(vorm.doorzichtigheid * 100)} onLive={(v) => editor.voorbeeld(vorm.id, { doorzichtigheid: v / 100 })} onAnnuleer={() => editor.annuleerVoorbeeld()} onWijzig={(v) => editor.update(vorm.id, { doorzichtigheid: v / 100 })} />
 {/if}
 
 <style>

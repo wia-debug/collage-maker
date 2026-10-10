@@ -55,3 +55,23 @@ test('tekstgrootte past live aan tijdens het slepen en is een undo-stap', async 
   await page.evaluate(() => window.__collage.editor.undo());
   expect((await elementen(page))[0].grootte).toBe(voor.grootte);
 });
+
+test('slider loslaten zonder change annuleert het voorbeeld en laat de geschiedenis ongemoeid', async ({ page }) => {
+  await openNieuweCollage(page);
+  await page.click('#tool-tekst');
+  await page.click('#tekst-nieuw');
+  await page.fill('#tekst-veld', 'Hallo');
+  await page.click('#tekst-klaar');
+  const [voor] = await elementen(page);
+  const kanTerug = () => page.evaluate(() => window.__collage.editor.get().canUndo);
+  const undoVoor = await kanTerug();
+  await page.$eval('#schuif-grootte', (el: HTMLInputElement) => {
+    el.focus();
+    el.value = '200';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  expect((await elementen(page))[0].grootte).toBe(200);
+  await page.$eval('#schuif-grootte', (el: HTMLInputElement) => el.blur());
+  await expect.poll(async () => (await elementen(page))[0].grootte).toBe(voor.grootte);
+  expect(await kanTerug()).toBe(undoVoor);
+});

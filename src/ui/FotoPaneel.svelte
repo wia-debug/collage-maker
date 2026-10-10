@@ -67,8 +67,8 @@
       </button>
     {/each}
   </div>
-  <Schuif label="Helder" min={-100} max={100} waarde={foto.helderheid} onLive={(v) => editor.voorbeeld(foto.id, { helderheid: v })} onWijzig={(v) => editor.update(foto.id, { helderheid: v })} />
-  <Schuif label="Contrast" min={-100} max={100} waarde={foto.contrast} onLive={(v) => editor.voorbeeld(foto.id, { contrast: v })} onWijzig={(v) => editor.update(foto.id, { contrast: v })} />
+  <Schuif label="Helder" min={-100} max={100} waarde={foto.helderheid} onLive={(v) => editor.voorbeeld(foto.id, { helderheid: v })} onAnnuleer={() => editor.annuleerVoorbeeld()} onWijzig={(v) => editor.update(foto.id, { helderheid: v })} />
+  <Schuif label="Contrast" min={-100} max={100} waarde={foto.contrast} onLive={(v) => editor.voorbeeld(foto.id, { contrast: v })} onAnnuleer={() => editor.annuleerVoorbeeld()} onWijzig={(v) => editor.update(foto.id, { contrast: v })} />
 {/if}
 
 <style>

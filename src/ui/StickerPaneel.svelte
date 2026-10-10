@@ -52,7 +52,7 @@
 <h3>Kleur</h3>
 <KleurPalet waarde={sticker?.kleur ?? kleur} onKies={kiesKleur} />
 {#if sticker}
-  <Schuif label="Zichtbaar" min={10} max={100} waarde={Math.round((sticker.doorzichtigheid ?? 1) * 100)} onLive={(v) => editor.voorbeeld(sticker.id, { doorzichtigheid: v / 100 })} onWijzig={(v) => editor.update(sticker.id, { doorzichtigheid: v / 100 })} />
+  <Schuif label="Zichtbaar" min={10} max={100} waarde={Math.round((sticker.doorzichtigheid ?? 1) * 100)} onLive={(v) => editor.voorbeeld(sticker.id, { doorzichtigheid: v / 100 })} onAnnuleer={() => editor.annuleerVoorbeeld()} onWijzig={(v) => editor.update(sticker.id, { doorzichtigheid: v / 100 })} />
 {/if}
 
 <style>
