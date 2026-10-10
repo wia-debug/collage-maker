@@ -49,3 +49,21 @@ describe('opruimregels', () => {
     expect((await teVragen(db, 'p', NU)).map((c) => c.naam)).toEqual(['oud']);
   });
 });
+
+describe('eigen stickers en inzendingen opruimen', () => {
+  it('wist eigen stickers en inzendingen ouder dan 60 dagen', async () => {
+    const nu = 200 * DAG;
+    const b = new Blob(['x']);
+    await db.eigenStickers.bulkPut([
+      { id: 'oud', profielId: '', aangemaakt: 0, gebruikt: nu - 61 * DAG, blob: b },
+      { id: 'nieuw', profielId: '', aangemaakt: 0, gebruikt: nu - 10 * DAG, blob: b },
+    ]);
+    await db.inzendingen.bulkPut([
+      { id: 'i-oud', naam: 'A', ontvangen: nu - 61 * DAG, bestand: b, voorbeeld: null },
+      { id: 'i-nieuw', naam: 'B', ontvangen: nu - 1 * DAG, bestand: b, voorbeeld: null },
+    ]);
+    await ruimAutomatischOp(db, nu);
+    expect((await db.eigenStickers.toArray()).map((s) => s.id)).toEqual(['nieuw']);
+    expect((await db.inzendingen.toArray()).map((s) => s.id)).toEqual(['i-nieuw']);
+  });
+});

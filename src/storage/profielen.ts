@@ -41,5 +41,6 @@ export async function zetPin(db: CollageDb, id: string, pin: string[]): Promise<
 export async function wisProfiel(db: CollageDb, id: string): Promise<void> {
   const ids = (await db.collages.where('profielId').equals(id).primaryKeys()) as string[];
   await wisCollages(db, ids);
+  await db.eigenStickers.where('profielId').equals(id).delete();
   await db.profielen.delete(id);
 }

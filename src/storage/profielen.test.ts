@@ -61,3 +61,12 @@ describe('profielen', () => {
     expect(await controleerPin(db, p.id, pin)).toBe(true);
   });
 });
+
+describe('profiel en eigen stickers', () => {
+  it('profiel wissen wist ook zijn eigen stickers', async () => {
+    const p = await maakProfiel(db, { naam: 'Lies', symbool: 'star', kleur: '#FF6B6B', pin: ['star', 'star', 'star'] });
+    await db.eigenStickers.put({ id: 's1', profielId: p.id, aangemaakt: 1, gebruikt: 1, blob: new Blob(['x']) });
+    await wisProfiel(db, p.id);
+    expect(await db.eigenStickers.count()).toBe(0);
+  });
+});

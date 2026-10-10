@@ -24,6 +24,9 @@ export async function ruimAutomatischOp(db: CollageDb, nu = Date.now()): Promise
   const over = await db.collages.toArray();
   const weg = oudeProfielen(await db.profielen.toArray(), new Set(over.map((r) => r.profielId)), nu);
   if (weg.length) await db.profielen.bulkDelete(weg);
+  const grens = nu - 60 * DAG;
+  await db.eigenStickers.where('gebruikt').below(grens).delete();
+  await db.inzendingen.where('ontvangen').below(grens).delete();
 }
 
 export async function teVragen(db: CollageDb, profielId: string | null, nu = Date.now()): Promise<CollageSamenvatting[]> {

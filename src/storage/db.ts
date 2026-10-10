@@ -6,11 +6,16 @@ export interface CollageRij { id: string; profielId: string; naam: string; gewij
 export interface AssetRij { collageId: string; id: string; blob: Blob }
 export interface InstellingRij { sleutel: string; waarde: unknown }
 
+export interface EigenStickerRij { id: string; profielId: string; aangemaakt: number; gebruikt: number; blob: Blob }
+export interface InzendingRij { id: string; naam: string; ontvangen: number; bestand: Blob; voorbeeld: Blob | null }
+
 export class CollageDb extends Dexie {
   collages!: Table<CollageRij, string>;
   assets!: Table<AssetRij, [string, string]>;
   profielen!: Table<Profiel, string>;
   instellingen!: Table<InstellingRij, string>;
+  eigenStickers!: Table<EigenStickerRij, string>;
+  inzendingen!: Table<InzendingRij, string>;
 
   constructor(naam: string) {
     super(naam);
@@ -19,6 +24,14 @@ export class CollageDb extends Dexie {
       assets: '[collageId+id], collageId',
       profielen: 'id',
       instellingen: 'sleutel',
+    });
+    this.version(2).stores({
+      collages: 'id, profielId, gewijzigd',
+      assets: '[collageId+id], collageId',
+      profielen: 'id',
+      instellingen: 'sleutel',
+      eigenStickers: 'id, profielId, gebruikt',
+      inzendingen: 'id, ontvangen',
     });
   }
 }

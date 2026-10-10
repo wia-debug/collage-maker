@@ -55,8 +55,8 @@ describe('instellingen', () => {
 });
 
 describe('schema', () => {
-  it('heeft de vier tabellen', async () => {
+  it('heeft de zes tabellen', async () => {
     await db.open();
-    expect(db.tables.map((t) => t.name).sort()).toEqual(['assets', 'collages', 'instellingen', 'profielen']);
+    expect(db.tables.map((t) => t.name).sort()).toEqual(['assets', 'collages', 'eigenStickers', 'instellingen', 'inzendingen', 'profielen']);
   });
 });
