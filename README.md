@@ -17,4 +17,4 @@ Een offline webapp (PWA) waarmee kinderen van 6 tot 12 jaar collages maken, op i
 
 ## Licentie
 
-De app gebruikt `@imgly/background-removal` (AGPL-3.0) voor "Achtergrond weg". Wie de app publiek online zet, moet daarom ook de broncode publiek beschikbaar maken. Dat is een stap voor de eigenaar van het project: de repository publiek maken of een andere licentie kiezen. Er is nog niets gepubliceerd.
+De app gebruikt `@imgly/background-removal` (AGPL-3.0) voor "Achtergrond weg". Wie de app publiek online zet, moet daarom ook de broncode publiek beschikbaar maken.
