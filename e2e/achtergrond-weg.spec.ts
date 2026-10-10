@@ -8,7 +8,7 @@ async function voegFotoToe(page: import('@playwright/test').Page) {
   await page.waitForFunction(() => window.__collage.editor.get().collage.elementen.length === 1);
 }
 
-test('achtergrond weg maakt een uitknipsel; ongedaan maken zet het terug', async ({ page }) => {
+async function nepVerwijderaar(page: import('@playwright/test').Page) {
   await page.addInitScript(() => {
     (window as any).__achtergrondWeg = async (blob: Blob, voortgang: (d: number) => void) => {
       voortgang(1);
@@ -23,6 +23,10 @@ test('achtergrond weg maakt een uitknipsel; ongedaan maken zet het terug', async
       return new Promise<Blob>((klaar) => c.toBlob((b) => klaar(b!), 'image/png'));
     };
   });
+}
+
+test('achtergrond weg maakt een uitknipsel; ongedaan maken zet het terug', async ({ page }) => {
+  await nepVerwijderaar(page);
   await openNieuweCollage(page);
   await voegFotoToe(page);
   const voor = (await elementen(page))[0].assetId;
@@ -43,4 +47,22 @@ test('model niet bereikbaar: melding, foto ongewijzigd', async ({ page }) => {
   await page.click('#ctx-achtergrond-weg');
   await expect(page.getByText('Dit lukt nu niet. Probeer opnieuw met internet.')).toBeVisible();
   expect(await elementen(page)).toEqual(voor);
+});
+
+test('achtergrond weg houdt de uitsnede van een bijgesneden foto', async ({ page }) => {
+  await nepVerwijderaar(page);
+  await openNieuweCollage(page);
+  await voegFotoToe(page);
+  const uitsnede = { x: 100, y: 50, breedte: 200, hoogte: 200 };
+  const voor = await page.evaluate((u) => {
+    const e = window.__collage.editor;
+    const f = e.get().collage.elementen[0];
+    e.update(f.id, { uitsnede: u, hoogte: f.breedte });
+    return f.assetId;
+  }, uitsnede);
+  await page.click('#ctx-achtergrond-weg');
+  await page.waitForFunction((id) => window.__collage.editor.get().collage.elementen[0].assetId !== id, voor);
+  const [f] = await elementen(page);
+  expect(f.uitknipsel).toBe(true);
+  expect(f.uitsnede).toEqual(uitsnede);
 });

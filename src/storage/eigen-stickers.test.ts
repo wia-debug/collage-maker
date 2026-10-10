@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { maakDb, type CollageDb } from './db';
 import { ruimTestDbOp } from './testhulp';
 import { nieuwId } from '../document/create';
-import { bewaarEigenSticker, gebruikEigenSticker, lijstEigenStickers, MAX_EIGEN_STICKERS, snijTransparantBij, StickerFout, wisEigenSticker } from './eigen-stickers';
+import { bewaarEigenSticker, gebruikEigenSticker, lijstEigenStickers, MAX_EIGEN_STICKERS, snijTransparantBij, snijUit, StickerFout, wisEigenSticker } from './eigen-stickers';
 
 let db: CollageDb;
 beforeEach(() => { db = maakDb(`test-${nieuwId()}`); });
@@ -38,5 +38,19 @@ describe('eigen stickers', () => {
     const bmp = await createImageBitmap(uit);
     expect([bmp.width, bmp.height]).toEqual([30, 40]);
     expect(uit.type).toBe('image/png');
+  });
+  it('snijUit knipt de uitsnede van een foto uit', async () => {
+    const c = new OffscreenCanvas(100, 80);
+    const x = c.getContext('2d')!;
+    x.fillStyle = '#00f';
+    x.fillRect(0, 0, 100, 80);
+    x.fillStyle = '#f00';
+    x.fillRect(10, 5, 30, 20);
+    const uit = await snijUit(await c.convertToBlob({ type: 'image/png' }), { x: 10, y: 5, breedte: 30.2, hoogte: 19.8 });
+    const bmp = await createImageBitmap(uit);
+    expect([bmp.width, bmp.height]).toEqual([30, 20]);
+    const d = new OffscreenCanvas(30, 20).getContext('2d')!;
+    d.drawImage(bmp, 0, 0);
+    expect([...d.getImageData(15, 10, 1, 1).data]).toEqual([255, 0, 0, 255]);
   });
 });

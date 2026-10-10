@@ -66,3 +66,15 @@ export async function snijTransparantBij(blob: Blob): Promise<Blob> {
   (uit.getContext('2d') as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D).drawImage(c, minX, minY, b, h, 0, 0, b, h);
   return doekNaarPng(uit);
 }
+
+/** Knipt de uitsnede (in bronpixels) uit een foto, voor een sticker van een bijgesneden foto. */
+export async function snijUit(blob: Blob, u: { x: number; y: number; breedte: number; hoogte: number }): Promise<Blob> {
+  const bmp = await createImageBitmap(blob);
+  const x0 = Math.max(0, Math.round(u.x)), y0 = Math.max(0, Math.round(u.y));
+  const b = Math.max(1, Math.min(bmp.width - x0, Math.round(u.breedte)));
+  const h = Math.max(1, Math.min(bmp.height - y0, Math.round(u.hoogte)));
+  const uit = maakDoek(b, h);
+  (uit.getContext('2d') as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D).drawImage(bmp, x0, y0, b, h, 0, 0, b, h);
+  bmp.close();
+  return doekNaarPng(uit);
+}

@@ -37,7 +37,8 @@
   import { startTour, tourGezien } from '../tour/tour';
   import { db } from '../storage/db';
   import { bewaarCollage } from '../storage/collages';
-  import { bewaarEigenSticker, snijTransparantBij, StickerFout } from '../storage/eigen-stickers';
+  import { bewaarEigenSticker, snijTransparantBij, snijUit, StickerFout } from '../storage/eigen-stickers';
+  import { dekUitsnede } from '../editor/uitsnede';
   import { isVolFout, startAutosave } from '../storage/autosave';
   import { maakVoorbeeld } from '../export/voorbeeld';
   import { startHerinnering } from '../storage/herinnering';
@@ -172,7 +173,8 @@
     const blob = f?.type === 'foto' && f.assetId ? assets.blob(f.assetId) : undefined;
     if (!blob) return;
     try {
-      await bewaarEigenSticker(db, profielId, await snijTransparantBij(blob));
+      const bijgesneden = f?.type === 'foto' && f.uitsnede ? await snijUit(blob, f.uitsnede) : blob;
+      await bewaarEigenSticker(db, profielId, await snijTransparantBij(bijgesneden));
       toon('Bewaard in Mijn stickers', 'check-circle');
     } catch (e) {
       toon(e instanceof StickerFout ? 'Je hebt al veel stickers. Wis er eerst een paar.' : 'Bewaren lukte niet. Probeer het nog eens.', 'warning');
@@ -187,8 +189,16 @@
     achtergrondBezig = { deel: null, download: false };
     try {
       const uit = await verwijderAchtergrond(bron, (d) => { achtergrondBezig = { deel: d < 1 ? d : null, download: d < 1 }; });
+      // Het resultaat heeft normaal dezelfde maat als de bron: de uitsnede blijft dan geldig.
+      const [a, b] = await Promise.all([createImageBitmap(bron), createImageBitmap(uit)]);
+      const zelfdeMaat = a.width === b.width && a.height === b.height;
+      const [bw, bh] = [b.width, b.height];
+      a.close(); b.close();
       const nieuw = await assets.addBlob(uit);
-      editor.update(id, { assetId: nieuw, uitsnede: null, masker: 'rechthoek', uitknipsel: true });
+      const el = editor.get().collage.elementen.find((e) => e.id === id);
+      if (el?.type !== 'foto') return;
+      const uitsnede = zelfdeMaat ? el.uitsnede : dekUitsnede(bw, bh, el.breedte, el.hoogte);
+      editor.update(id, { assetId: nieuw, uitsnede, masker: 'rechthoek', uitknipsel: true });
     } catch (e) {
       toon(e instanceof AchtergrondFout ? ACHTERGRONDTEKST[e.code] : ACHTERGRONDTEKST.mislukt, 'warning');
     } finally {

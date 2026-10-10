@@ -21,7 +21,7 @@
       </button>
     {/if}
     {#if el.type === 'foto' && el.assetId && onAchtergrondWeg}
-      <button id="ctx-achtergrond-weg" onclick={onAchtergrondWeg}><Icon name="magic-wand" /><span>Weg</span></button>
+      <button id="ctx-achtergrond-weg" onclick={onAchtergrondWeg}><Icon name="magic-wand" /><span>Achtergrond</span></button>
     {/if}
     {#if el.type === 'foto' && el.uitknipsel && onMaakSticker}
       <button id="ctx-maak-sticker" onclick={onMaakSticker}><Icon name="sticker" /><span>Sticker</span></button>
