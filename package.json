@@ -26,6 +26,7 @@
     "@vite-pwa/assets-generator": "^2.0.0",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vitest/browser-playwright": "^4.1.11",
+    "peer": "^1.0.2",
     "playwright": "^1.64.0",
     "svelte": "^5.57.2",
     "svelte-check": "^4.7.6",

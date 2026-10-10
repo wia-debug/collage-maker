@@ -4,14 +4,18 @@ const ALLE_TOURS = ['editor', 'foto', 'tekst', 'stickers', 'vormen', 'tekenen', 
 
 export interface E2eInstellingen { toestel: 'ipad' | 'chromebook' | 'pc'; profielenAan?: boolean; mastercode?: string }
 
+export async function richtIn(page: Page): Promise<void> {
+  await page.addInitScript((tours) => {
+    try { localStorage.setItem('collage-tours-gezien', JSON.stringify(tours)); } catch { /* opslag geblokkeerd */ }
+  }, ALLE_TOURS);
+  await page.addInitScript(() => {
+    (window as any).__e2eInstellingen = { toestel: 'pc', profielenAan: false, mastercode: '123456' };
+  });
+}
+
 export const test = base.extend({
   page: async ({ page }, use) => {
-    await page.addInitScript((tours) => {
-      try { localStorage.setItem('collage-tours-gezien', JSON.stringify(tours)); } catch { /* opslag geblokkeerd */ }
-    }, ALLE_TOURS);
-    await page.addInitScript(() => {
-      (window as any).__e2eInstellingen = { toestel: 'pc', profielenAan: false, mastercode: '123456' };
-    });
+    await richtIn(page);
     await use(page);
   },
 });
@@ -21,6 +25,30 @@ export async function metInstellingen(page: Page, cfg: E2eInstellingen): Promise
   await page.addInitScript((c) => { (window as any).__e2eInstellingen = c; }, cfg);
 }
 export { expect };
+
+export async function nieuwToestel(browser: import('@playwright/test').Browser, cfg?: E2eInstellingen): Promise<Page> {
+  const context = await browser.newContext({ serviceWorkers: 'block', baseURL: 'http://localhost:4173' });
+  const p = await context.newPage();
+  await richtIn(p);
+  if (cfg) await metInstellingen(p, cfg);
+  return p;
+}
+
+// Nagebootste relay: beide toestellen delen dezelfde opslag in het testproces.
+export async function nepRelay(pages: Page[]): Promise<Map<string, Buffer>> {
+  const opslag = new Map<string, Buffer>();
+  for (const p of pages) {
+    await p.route('**/__relay/relay/*', async (route) => {
+      const sleutel = route.request().url().split('/').pop()!;
+      if (route.request().method() === 'PUT') { opslag.set(sleutel, route.request().postDataBuffer() ?? Buffer.alloc(0)); await route.fulfill({ status: 201 }); return; }
+      const d = opslag.get(sleutel);
+      if (!d) { await route.fulfill({ status: 404 }); return; }
+      opslag.delete(sleutel);
+      await route.fulfill({ status: 200, body: d, contentType: 'application/octet-stream' });
+    });
+  }
+  return opslag;
+}
 
 declare global {
   interface Window { __collage: any }
