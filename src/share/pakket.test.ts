@@ -10,8 +10,8 @@ async function png(): Promise<Blob> {
   return c.convertToBlob({ type: 'image/png' });
 }
 
-function willekeurig(n: number): Uint8Array {
-  const a = new Uint8Array(n);
+function willekeurig(n: number): Uint8Array<ArrayBuffer> {
+  const a = new Uint8Array(new ArrayBuffer(n));
   for (let i = 0; i < n; i += 65536) crypto.getRandomValues(a.subarray(i, Math.min(i + 65536, n)));
   return a;
 }
