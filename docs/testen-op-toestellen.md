@@ -29,6 +29,15 @@ PC:
 - Leerkrachtmenu: profielen aanzetten, profiel aanmaken.
 - Installeer de app ("App installeren" in de adresbalk) en controleer dat hij offline opent (vertrouwd https nodig, zie boven).
 
+## Delen
+
+Test delen met twee toestellen die op hetzelfde netwerk zitten (bijvoorbeeld iPad en PC, of iPad en Chromebook):
+- Open de app op beide toestellen. Tik op het ene toestel op "Ontvang". Er verschijnt een code.
+- Maak op het andere toestel een collage, tik op "Deel" en voer de code in. Komt er een vraag of de collage via de server mag, kies dan "Ja" (dat hoort bij het deel-gedeelte met de relay, zie hieronder).
+- Het ontvangen toestel toont de collage. Op de iPad kun je hem daarna openen met "Openen".
+
+Test ook een netwerk dat WebRTC blokkeert, bijvoorbeeld een gast-wifi met een strikte firewall. Rechtstreeks delen lukt daar niet, dus de collage gaat via de eigen server (de relay). Dat werkt alleen als de relay is ingesteld, zie [Delen via de server klaarzetten](delen-instellen.md). Controleer dan dat de app een code toont en dat het ontvangen toestel de collage krijgt.
+
 ## Chromebooks in de klas
 
 Op Chromebooks wordt alle sitedata bij elke aanmelding gewist, dus de instellingen zouden elke sessie terugvallen op de standaard (gedeelde iPad, code `000000`). Gebruik daarom de link `https://<adres>/?toestel=chromebook` als bladwijzer of als startpagina, via het beheer van de school (Google Admin: startpagina of vastgezette bladwijzer). Die link stelt het toesteltype in en gaat meteen naar het beginscherm. Omdat de sitedata telkens gewist wordt, is de leerkrachtcode op een Chromebook altijd `000000`; een gewijzigde code blijft daar niet bewaard.
