@@ -84,3 +84,35 @@ test('vastgezet element in een groep blijft staan bij wissen', async ({ page }) 
   await page.click('#ctx-wissen');
   expect(await elementen(page)).toHaveLength(1);
 });
+
+test('een niet-gekozen groepslid slepen verplaatst de hele groep', async ({ page }) => {
+  await openNieuweCollage(page);
+  await tweeVormen(page);
+  await page.evaluate(() => {
+    const { editor } = window.__collage;
+    editor.groepeer(editor.get().collage.elementen.map((e: any) => e.id));
+    editor.select(null);
+  });
+  await page.evaluate(() => new Promise<void>((k) => requestAnimationFrame(() => requestAnimationFrame(() => k()))));
+  const a = await page.evaluate(() => window.__collage.controller.naarScherm(300, 300));
+  const b = await page.evaluate(() => window.__collage.controller.naarScherm(300, 500));
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(a.x, (a.y + b.y) / 2, { steps: 5 });
+  await page.mouse.move(b.x, b.y, { steps: 5 });
+  await page.mouse.up();
+  const els = await elementen(page);
+  expect(els[0].y).toBeGreaterThan(400);
+  expect(els[1].y).toBeCloseTo(els[0].y, 0);
+});
+
+test('na een selectiekader dat op een element eindigt, werkt de volgende tik', async ({ page }) => {
+  await openNieuweCollage(page);
+  await tweeVormen(page);
+  await sleepKader(page, [-20, -20], [300, 300]);
+  await tikOpCanvas(page, 500, 300);
+  await expect.poll(() => page.evaluate(() => window.__collage.editor.get().selectedIds.length)).toBe(1);
+  const gekozen = await page.evaluate(() => window.__collage.editor.get().selectedId);
+  const tweede = (await elementen(page))[1].id;
+  expect(gekozen).toBe(tweede);
+});

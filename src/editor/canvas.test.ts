@@ -587,3 +587,19 @@ describe('meerdere elementen', () => {
     expect(editor.get().selectedId).toBeNull();
   });
 });
+
+describe('knijpen met meerdere gekozen', () => {
+  it('een tweede vinger stopt het slepen van de keuze', () => {
+    const { editor, ctrl } = opzet();
+    const a = maakVorm({ x: 100, y: 100, vorm: 'rechthoek', breedte: 50, hoogte: 50 });
+    const b = maakVorm({ x: 300, y: 100, vorm: 'rechthoek', breedte: 50, hoogte: 50 });
+    editor.add(a); editor.add(b);
+    editor.selectMany([a.id, b.id]);
+    const ga = ctrl.group(a.id)!;
+    ga.startDrag();
+    expect(ga.isDragging()).toBe(true);
+    const t = { clientX: 0, clientY: 0 };
+    ctrl.stage.fire('touchmove', { evt: { touches: [t, t], preventDefault() {} } as unknown as TouchEvent });
+    expect(ga.isDragging()).toBe(false);
+  });
+});

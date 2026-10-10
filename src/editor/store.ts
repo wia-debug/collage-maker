@@ -25,6 +25,9 @@ export function createEditor(initial: Collage) {
   function emit(): void {
     const bestaat = new Set(els().map((e) => e.id));
     if (selectedIds.some((id) => !bestaat.has(id))) selectedIds = selectedIds.filter((id) => bestaat.has(id));
+    // Na ongedaan maken kan een losse keuze weer bij een groep horen: altijd de hele groep kiezen.
+    const volledig = metGroep(selectedIds);
+    if (volledig.length !== selectedIds.length) selectedIds = volledig;
     store.set(snapshot());
   }
 

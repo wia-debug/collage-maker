@@ -261,3 +261,16 @@ describe('meerdere kiezen en groeperen', () => {
     expect(ed.get().selectedIds).toEqual([]);
   });
 });
+
+describe('keuze na ongedaan maken', () => {
+  it('ongedaan maken van groep los breidt een losse keuze weer uit naar de hele groep', () => {
+    const ed = createEditor(nieuweCollage('vierkant'));
+    const [a, b] = [100, 300].map((x) => maakVorm({ x, y: 100, vorm: 'ster', breedte: 50, hoogte: 50 }));
+    ed.add(a); ed.add(b);
+    ed.groepeer([a.id, b.id]);
+    ed.groepLos(ed.get().collage.elementen[0].groep!);
+    ed.select(a.id);
+    ed.undo();
+    expect([...ed.get().selectedIds].sort()).toEqual([a.id, b.id].sort());
+  });
+});

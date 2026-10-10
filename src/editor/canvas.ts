@@ -321,8 +321,16 @@ export class CanvasController {
     });
     this.stage.on('pointerdown', (e) => {
       if (this.gereedschap === 'selecteer') {
-        // Selectiekader: alleen vanaf een lege plek (geen element geraakt).
-        if (e.target !== this.stage || this.kader) return;
+        // Een kader dat op een element eindigde, gaf geen klik: de vlag mag de volgende tik niet opeten.
+        this.negeerKlik = false;
+        if (e.target !== this.stage) {
+          // Kies al bij het neerdrukken, zodat de transformer (en dus de hele groep) mee sleept.
+          const n = this.elementVan(e.target);
+          const meer = this.meerKiezen || !!(e.evt as PointerEvent).shiftKey;
+          if (n && !meer && !n.el.vergrendeld && !this.editor.get().selectedIds.includes(n.el.id)) this.editor.select(n.el.id);
+          return;
+        }
+        if (this.kader) return;
         const p = this.content.getRelativePointerPosition();
         const sp = this.stage.getPointerPosition();
         if (!p || !sp) return;
@@ -428,6 +436,12 @@ export class CanvasController {
     this.stage.on('touchmove', (e) => {
       const evt = e.evt as TouchEvent;
       if (evt.touches.length !== 2) return;
+      if (this.editor.get().selectedIds.length > 1) {
+        // Knijpen werkt alleen op één element; stop ook het slepen van de keuze.
+        evt.preventDefault();
+        for (const g of this.transformer.nodes()) if (g.isDragging()) g.stopDrag();
+        return;
+      }
       const id = this.editor.get().selectedId;
       const n = id ? this.nodes.get(id) : undefined;
       if (!n || n.el.vergrendeld) return;
