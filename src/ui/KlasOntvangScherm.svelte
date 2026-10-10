@@ -4,7 +4,7 @@
   import { SYMBOOL_NAMEN } from '../storage/profielen';
   import type { Instellingen } from '../storage/instellingen';
   import { codeNaarSleutel, nieuweCode } from '../share/code';
-  import { klasRelay, startKlasOntvanger } from '../share/klas';
+  import { bewaakKlasOntvanger, klasRelay } from '../share/klas';
   import { DeelFout } from '../share/fouten';
   import { bewaarInzending } from '../storage/inzendingen';
   import { db } from '../storage/db';
@@ -15,13 +15,15 @@
   const MAX_POGINGEN = 5;
   let code = $state<string[]>([]);
   let namen = $state<string[]>([]);
-  let netwerk = $state(false);
+  // Twee aparte vlaggen: de rechtstreekse peer en de klasmap op de server.
+  let peerWeg = $state(false);
+  let pollWeg = $state(false);
+  const netwerk = $derived(peerWeg || pollWeg);
   let mislukt = $state(false);
   const relay = klasRelay();
   const viaServer = relay.ingesteld && untrack(() => inst.cloudDelen) !== 'nooit';
   let ontvanger: { stop(): void } | null = null;
   let pollTimer: ReturnType<typeof setTimeout> | undefined;
-  let herstartTimer: ReturnType<typeof setTimeout> | undefined;
   let laatsteNieuw = Date.now();
   let weg = false;
   const gehaald = new Set<string>();
@@ -37,30 +39,15 @@
     speel('plop');
   }
 
-  function startPeer(c: string[]) {
-    const o = startKlasOntvanger(c, {
-      onInzending: (naam, pakket) => void nieuw(naam, pakket),
-      onFout: (f) => {
-        netwerk = true;
-        if (f.code === 'geen-verbinding' && !weg) {
-          ontvanger?.stop();
-          herstartTimer = setTimeout(() => { if (!weg) { const n = startPeer(c); n.klaar.then(() => (netwerk = false), () => {}); } }, 3000);
-        }
-      },
-    });
-    ontvanger = o;
-    return o;
-  }
-
   function startPolling(sleutel: string, token: string) {
     const volgende = () => {
       const wachtMs = Date.now() - laatsteNieuw > 10 * 60_000 ? 10_000 : 5000;
       pollTimer = setTimeout(async () => {
         const lijst = await relay.lijst(sleutel, token);
         if (weg) return;
-        if (!lijst) netwerk = true;
+        if (!lijst) pollWeg = true;
         else {
-          netwerk = false;
+          pollWeg = false;
           for (const item of lijst) {
             if (gehaald.has(item.id)) continue;
             const r = await relay.haal(sleutel, item.id, token);
@@ -77,12 +64,12 @@
   async function begin() {
     for (let poging = 0; poging < MAX_POGINGEN && !weg; poging++) {
       const c = nieuweCode();
-      const o = startPeer(c);
+      const o = bewaakKlasOntvanger(c, { onInzending: (naam, pakket) => void nieuw(naam, pakket), onVerbinding: (ok) => (peerWeg = !ok) });
+      ontvanger = o;
       let peerOk = true;
       try { await o.klaar; } catch (e) {
-        o.stop();
-        if (e instanceof DeelFout && e.code === 'code-bezet') continue;
-        peerOk = false;
+        if (e instanceof DeelFout && e.code === 'code-bezet') { o.stop(); continue; }
+        peerOk = false; // niet stoppen: na bewaak() blijft de ontvanger het opnieuw proberen
       }
       let token: string | null = null;
       if (viaServer) {
@@ -91,9 +78,10 @@
         token = r;
       }
       if (weg) { o.stop(); return; }
-      if (!peerOk && !token) { mislukt = true; return; }
+      if (!peerOk && !token) { o.stop(); mislukt = true; return; }
       code = c;
-      if (!peerOk) netwerk = true;
+      peerWeg = !peerOk;
+      o.bewaak();
       if (token) startPolling(codeNaarSleutel(c), token);
       return;
     }
@@ -108,7 +96,6 @@
     weg = true;
     ontvanger?.stop();
     clearTimeout(pollTimer);
-    clearTimeout(herstartTimer);
     void wake?.release().catch(() => {});
   });
 </script>

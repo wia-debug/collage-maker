@@ -158,7 +158,7 @@
   <OntvangDialoog {inst} onOpen={(p) => { toonOntvang = false; void openBestand(p); }} onSluit={() => (toonOntvang = false)} />
 {/if}
 {#if toonLeerkracht && inst}
-  <LeerkrachtMenu {inst} onInstellingen={nieuweInstellingen} onSluit={sluitLeerkracht} onKlas={() => { toonLeerkracht = false; scherm = 'klas'; }} onGalerij={() => { toonLeerkracht = false; scherm = 'galerij'; }} />
+  <LeerkrachtMenu {inst} onInstellingen={nieuweInstellingen} onSluit={sluitLeerkracht} onKlas={async () => { await sluitLeerkracht(); scherm = 'klas'; }} onGalerij={async () => { await sluitLeerkracht(); scherm = 'galerij'; }} />
 {/if}
 {#if scherm === 'klas' && inst}
   <KlasOntvangScherm {inst} onGalerij={() => (scherm = 'galerij')} onSluit={() => (scherm = null)} />

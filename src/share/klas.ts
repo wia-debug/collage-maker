@@ -141,6 +141,60 @@ export async function stuurNaarLeerkracht(o: {
   return 'server';
 }
 
+// Fouten van de verbinding met de PeerServer (niet van één datakanaal).
+const isSignaalFout = (t?: string) => t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed' || t === 'disconnected';
+
+export const standaardWachttijd = (poging: number): number => Math.min(3000 * 2 ** poging, 30_000);
+
+/**
+ * Klasontvanger die zichzelf herstart (zelfde code) als de verbinding wegvalt.
+ * `klaar` is de eerste poging (voor code-bezet bij het kiezen van een code). Pas na `bewaak()` wordt
+ * er opnieuw geprobeerd, met oplopende wachttijd, tot `stop()`; ook als de eerste poging mislukte.
+ */
+export function bewaakKlasOntvanger(code: string[], o: {
+  onInzending(naam: string, pakket: Blob): void; onVerbinding?(ok: boolean): void; fabriek?: PeerFabriek; wachttijd?: (poging: number) => number;
+}): { klaar: Promise<void>; bewaak(): void; stop(): void } {
+  const wachttijd = o.wachttijd ?? standaardWachttijd;
+  let weg = false;
+  let bewaakt = false;
+  let dood = false;
+  let poging = 0;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let huidig: { klaar: Promise<void>; stop(): void } | null = null;
+
+  const plan = () => {
+    if (weg || !bewaakt) return;
+    clearTimeout(timer);
+    timer = setTimeout(start, wachttijd(poging++));
+  };
+  const valWeg = (h: { stop(): void }) => {
+    h.stop();
+    dood = true;
+    o.onVerbinding?.(false);
+    plan();
+  };
+  function start() {
+    if (weg) return null;
+    const h: { klaar: Promise<void>; stop(): void } = startKlasOntvanger(code, {
+      onInzending: o.onInzending,
+      fabriek: o.fabriek,
+      onFout: () => { if (h === huidig && !weg) valWeg(h); },
+    });
+    huidig = h;
+    h.klaar.then(
+      () => { if (h !== huidig || weg) return; dood = false; poging = 0; o.onVerbinding?.(true); },
+      () => { if (h !== huidig || weg) return; valWeg(h); },
+    );
+    return h;
+  }
+  const eerste = start()!;
+  return {
+    klaar: eerste.klaar,
+    bewaak() { bewaakt = true; if (dood) plan(); },
+    stop() { weg = true; clearTimeout(timer); huidig?.stop(); },
+  };
+}
+
 export function startKlasOntvanger(code: string[], o: { onInzending(naam: string, pakket: Blob): void; onFout?(f: DeelFout): void; fabriek?: PeerFabriek }): { klaar: Promise<void>; stop(): void } {
   const peer = (o.fabriek ?? standaardFabriek)(klasPeerId(code));
   let geopend = false;
@@ -150,7 +204,8 @@ export function startKlasOntvanger(code: string[], o: { onInzending(naam: string
       const f = err?.type === 'unavailable-id' ? new DeelFout('code-bezet') : isNetwerkFout(err?.type) ? new DeelFout('geen-verbinding') : null;
       if (!f) return;
       if (!geopend) { reject(f); try { peer.destroy(); } catch { /* al weg */ } }
-      else o.onFout?.(f);
+      // Na open: een mislukte WebRTC-verbinding met één kind is geen reden om de leerkracht-peer te herstarten.
+      else if (isSignaalFout(err?.type)) o.onFout?.(f);
     });
   });
   peer.on('connection', (conn) => {

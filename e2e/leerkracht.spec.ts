@@ -90,3 +90,21 @@ test('actief profiel wissen brengt terug naar de profielkeuze', async ({ page })
   await expect(page.getByRole('heading', { name: 'Wie ben jij?' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Sem' })).toHaveCount(0);
 });
+
+test('actief profiel wissen en dan Klas ontvangen: na Stop terug naar de profielkeuze', async ({ page }) => {
+  await metInstellingen(page, { toestel: 'ipad' });
+  await page.goto('/');
+  await page.click('#profiel-nieuw');
+  await page.fill('#profiel-naam', 'Sem');
+  await page.click('#profiel-verder');
+  for (let i = 0; i < 6; i++) await page.click('#symbool-star');
+  await expect(page.locator('#start-nieuw')).toBeVisible();
+  await openMenu(page);
+  await page.locator('[id^="profiel-wis-"]').click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Wissen', exact: true }).click();
+  await page.click('#klas-ontvangen');
+  await expect(page.locator('#klas-scherm')).toBeVisible();
+  await page.click('#klas-stop');
+  await expect(page.getByRole('heading', { name: 'Wie ben jij?' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sem' })).toHaveCount(0);
+});

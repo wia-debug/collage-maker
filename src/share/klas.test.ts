@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { DeelFout } from './fouten';
-import { klasPeerId, maakKlasRelay, nieuwKlasId, schoneNaam, startKlasOntvanger, stuurNaarLeerkracht } from './klas';
+import { bewaakKlasOntvanger, klasPeerId, maakKlasRelay, nieuwKlasId, schoneNaam, startKlasOntvanger, stuurNaarLeerkracht } from './klas';
 import type { ConnLike, PeerFabriek, PeerLike } from './peer';
 
 type Luisteraars = Record<string, ((...a: any[]) => void)[]>;
@@ -53,6 +53,69 @@ describe('klas', () => {
     expect(kapot.verstuurd).toEqual([]);
     expect(kapot.gesloten).toBe(true);
     o.stop();
+  });
+
+  it('ontvanger: een webrtc-fout van één verbinding na open meldt niets', async () => {
+    const peer = nepPeer();
+    const fouten: string[] = [];
+    const o = startKlasOntvanger(['star', 'heart', 'cloud', 'drop'], { fabriek: () => peer, onInzending: () => {}, onFout: (f) => fouten.push(f.code) });
+    peer.open();
+    await o.klaar;
+    peer.fout('webrtc');
+    expect(fouten).toEqual([]);
+    peer.fout('network');
+    expect(fouten).toEqual(['geen-verbinding']);
+    o.stop();
+  });
+
+  it('bewaakte ontvanger blijft opnieuw proberen (geen verbinding, code nog bezet) tot het lukt', async () => {
+    const peers: ReturnType<typeof nepPeer>[] = [];
+    const ids: (string | undefined)[] = [];
+    const status: boolean[] = [];
+    const tik = () => new Promise((r) => setTimeout(r, 5));
+    const b = bewaakKlasOntvanger(['star', 'heart', 'cloud', 'drop'], {
+      fabriek: (id) => { ids.push(id); const p = nepPeer(); peers.push(p); return p; },
+      onInzending: () => {}, onVerbinding: (ok) => status.push(ok), wachttijd: () => 0,
+    });
+    peers[0].open();
+    await b.klaar;
+    b.bewaak();
+    peers[0].fout('webrtc');
+    await tik();
+    expect(peers).toHaveLength(1);
+    peers[0].fout('disconnected');
+    await tik();
+    expect(peers).toHaveLength(2);
+    peers[1].fout('network');
+    await tik();
+    expect(peers).toHaveLength(3);
+    peers[2].fout('unavailable-id');
+    await tik();
+    expect(peers).toHaveLength(4);
+    peers[3].open();
+    await tik();
+    expect(status).toEqual([true, false, false, false, true]);
+    expect(new Set(ids)).toEqual(new Set(['kidsklas-abcd']));
+    b.stop();
+    peers[3].fout('network');
+    await tik();
+    expect(peers).toHaveLength(4);
+  });
+
+  it('bewaakte ontvanger: mislukte eerste poging wordt pas na bewaak() opnieuw geprobeerd', async () => {
+    const peers: ReturnType<typeof nepPeer>[] = [];
+    const tik = () => new Promise((r) => setTimeout(r, 5));
+    const b = bewaakKlasOntvanger(['star', 'heart', 'cloud', 'drop'], {
+      fabriek: () => { const p = nepPeer(); peers.push(p); return p; }, onInzending: () => {}, wachttijd: () => 0,
+    });
+    peers[0].fout('network');
+    await expect(b.klaar).rejects.toMatchObject({ code: 'geen-verbinding' });
+    await tik();
+    expect(peers).toHaveLength(1);
+    b.bewaak();
+    await tik();
+    expect(peers).toHaveLength(2);
+    b.stop();
   });
 
   it('bezette code geeft code-bezet', async () => {
