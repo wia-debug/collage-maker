@@ -226,7 +226,7 @@ export class CanvasController {
   protected updateTransformer(selectedId: string | null): void {
     const sel = selectedId ? this.nodes.get(selectedId) : undefined;
     this.transformer.nodes(sel && !sel.el.vergrendeld ? [sel.group] : []);
-    const vrij = sel?.el.type === 'foto' && !!sel.el.assetId;
+    const vrij = sel?.el.type === 'foto' && !!sel.el.assetId && !sel.el.verhoudingVast;
     this.transformer.keepRatio(sel?.el.type !== 'vorm' && !vrij);
     this.transformer.enabledAnchors(vrij ? VRIJE_ANKERS : HOEK_ANKERS);
   }

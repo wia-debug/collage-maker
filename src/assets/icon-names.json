@@ -9,5 +9,7 @@
   "frame-corners", "magic-wand", "sliders", "paw-print", "rocket", "soccer-ball", "leaf", "cake",
   "tree", "pizza", "car", "palette", "gradient", "dots-nine",
   "floppy-disk", "folder-open", "users", "gear", "backspace", "desktop", "device-tablet", "laptop", "user-plus",
-  "diamond", "pentagon", "hexagon", "rectangle", "share-network"
+  "diamond", "pentagon", "hexagon", "rectangle", "share-network",
+  "lock-simple", "lock-simple-open", "camera", "camera-rotate", "user-circle", "play", "pause", "caret-left", "caret-right",
+  "chalkboard-teacher", "images", "speaker-high", "speaker-slash", "file-zip", "corners-out", "paper-plane-tilt", "student", "wifi-slash"
 ]

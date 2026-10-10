@@ -21,7 +21,7 @@ function basis(x: number, y: number, breedte: number, hoogte: number): Basis {
 }
 
 export function maakFoto(p: { x: number; y: number; breedte: number; hoogte: number; assetId: string | null }): FotoElement {
-  return { ...basis(p.x, p.y, p.breedte, p.hoogte), type: 'foto', assetId: p.assetId, uitsnede: null, masker: 'rechthoek', kader: { stijl: 'geen', kleur: '#FFFFFF' }, filter: 'normaal', helderheid: 0, contrast: 0 };
+  return { ...basis(p.x, p.y, p.breedte, p.hoogte), type: 'foto', assetId: p.assetId, uitsnede: null, masker: 'rechthoek', kader: { stijl: 'geen', kleur: '#FFFFFF' }, filter: 'normaal', helderheid: 0, contrast: 0, verhoudingVast: true, uitknipsel: false };
 }
 
 export function maakTekst(p: { x: number; y: number; tekst: string; breedte?: number; grootte?: number; lettertype?: string; kleur?: string; uitlijning?: TekstElement['uitlijning']; ballon?: string | null }): TekstElement {

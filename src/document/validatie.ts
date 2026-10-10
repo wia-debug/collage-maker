@@ -21,6 +21,7 @@ const isGetal = (v: unknown): v is number => typeof v === 'number' && Number.isF
 type Controle = (v: unknown) => boolean;
 const isTekst: Controle = (v) => typeof v === 'string';
 const isBool: Controle = (v) => typeof v === 'boolean';
+const isBoolOfAfwezig: Controle = (v) => v === undefined || typeof v === 'boolean';
 const isTekstOfNull: Controle = (v) => v === null || typeof v === 'string';
 const isGetalLijst: Controle = (v) => Array.isArray(v) && v.every(isGetal);
 const isGetalOfAfwezig: Controle = (v) => v === undefined || isGetal(v);
@@ -29,7 +30,7 @@ const isKader: Controle = (v) => isObj(v) && isTekst(v.stijl) && isTekst(v.kleur
 
 // Per elementtype / achtergrondsoort: veld -> controle.
 const ELEMENT_VELDEN: Record<string, Record<string, Controle>> = {
-  foto: { assetId: isTekstOfNull, uitsnede: isUitsnede, masker: isTekst, kader: isKader, filter: isTekst, helderheid: isGetal, contrast: isGetal },
+  foto: { assetId: isTekstOfNull, uitsnede: isUitsnede, masker: isTekst, kader: isKader, filter: isTekst, helderheid: isGetal, contrast: isGetal, verhoudingVast: isBoolOfAfwezig, uitknipsel: isBoolOfAfwezig },
   tekst: { tekst: isTekst, lettertype: isTekst, kleur: isTekst, grootte: isGetal },
   sticker: { sticker: isTekst, kleur: isTekst, doorzichtigheid: isGetalOfAfwezig },
   vorm: { vorm: isTekst, randDikte: isGetal, doorzichtigheid: isGetal },
@@ -72,10 +73,13 @@ export function leesCollage(data: unknown): Collage {
     }
   }
   const nu = Date.now();
+  const elementen = (c.elementen as Record<string, unknown>[]).map((e) =>
+    e.type === 'foto' ? { ...e, verhoudingVast: e.verhoudingVast ?? true, uitknipsel: e.uitknipsel ?? false } : e);
   return {
     ...c,
+    elementen,
     profielId: typeof c.profielId === 'string' ? c.profielId : null,
     aangemaakt: isGetal(c.aangemaakt) ? c.aangemaakt : nu,
     gewijzigd: isGetal(c.gewijzigd) ? c.gewijzigd : nu,
-  } as Collage;
+  } as unknown as Collage;
 }

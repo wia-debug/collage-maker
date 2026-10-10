@@ -33,7 +33,7 @@ describe('formaten', () => {
 describe('elementfabrieken', () => {
   it('maakFoto vult standaardwaarden', () => {
     const f = maakFoto({ x: 10, y: 20, breedte: 300, hoogte: 200, assetId: null });
-    expect(f).toMatchObject({ type: 'foto', x: 10, y: 20, breedte: 300, hoogte: 200, assetId: null, uitsnede: null, masker: 'rechthoek', kader: { stijl: 'geen', kleur: '#FFFFFF' }, filter: 'normaal', helderheid: 0, contrast: 0, rotatie: 0, schaalX: 1, schaalY: 1, gespiegeld: false, vergrendeld: false });
+    expect(f).toMatchObject({ type: 'foto', x: 10, y: 20, breedte: 300, hoogte: 200, assetId: null, uitsnede: null, masker: 'rechthoek', kader: { stijl: 'geen', kleur: '#FFFFFF' }, filter: 'normaal', helderheid: 0, contrast: 0, verhoudingVast: true, uitknipsel: false, rotatie: 0, schaalX: 1, schaalY: 1, gespiegeld: false, vergrendeld: false });
   });
 
   it('maakTekst gebruikt kindvriendelijke standaarden', () => {

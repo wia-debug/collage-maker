@@ -4,7 +4,7 @@ import { naarBestand, vanBestand } from './bestand';
 import { AssetStore } from '../assets/store';
 import { maakFoto, nieuweCollage } from '../document/create';
 import { CollageFout } from '../document/validatie';
-import { SCHEMA_VERSIE } from '../document/types';
+import { SCHEMA_VERSIE, type Collage } from '../document/types';
 
 async function png(): Promise<Blob> {
   const c = new OffscreenCanvas(3, 3);
@@ -66,5 +66,13 @@ describe('.collage-bestand', () => {
     for (let i = 0; i < bytes.length - naam.length && start < 0; i++) if (naam.every((b, k) => bytes[i + k] === b)) start = i;
     for (let i = start + naam.length; i < start + naam.length + 40; i++) bytes[i] ^= 0xff;
     expect(await code(vanBestand(new Blob([bytes as BlobPart])))).toBe('ongeldig');
+  });
+
+  it('oud .collage-bestand zonder fase 4-velden opent met vaste verhouding', async () => {
+    const f = maakFoto({ x: 0, y: 0, breedte: 100, hoogte: 50, assetId: null }) as unknown as Record<string, unknown>;
+    delete f.verhoudingVast; delete f.uitknipsel;
+    const c = { ...nieuweCollage('vierkant'), elementen: [f] } as unknown as Collage;
+    const { collage } = await vanBestand(await naarBestand(c, { blob: () => undefined }));
+    expect(collage.elementen[0]).toMatchObject({ verhoudingVast: true, uitknipsel: false });
   });
 });

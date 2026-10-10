@@ -15,6 +15,11 @@
     {#if el.type === 'foto' && el.assetId && onBijsnijden}
       <button id="ctx-bijsnijden" onclick={onBijsnijden}><Icon name="crop" /><span>Knip</span></button>
     {/if}
+    {#if el.type === 'foto' && el.assetId}
+      <button id="ctx-verhouding" aria-pressed={el.verhoudingVast} onclick={() => editor.update(el.id, { verhoudingVast: !el.verhoudingVast })}>
+        <Icon name={el.verhoudingVast ? 'lock-simple-open' : 'lock-simple'} /><span>{el.verhoudingVast ? 'Verhouding los' : 'Verhouding vast'}</span>
+      </button>
+    {/if}
     <button id="ctx-voor" onclick={() => editor.move(el.id, 'voor')}><Icon name="arrow-line-up" /><span>Voor</span></button>
     <button id="ctx-achter" onclick={() => editor.move(el.id, 'achter')}><Icon name="arrow-line-down" /><span>Achter</span></button>
     <button id="ctx-kopie" onclick={() => editor.duplicate(el.id)}><Icon name="copy" /><span>Kopie</span></button>

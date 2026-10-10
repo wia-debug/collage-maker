@@ -116,3 +116,23 @@ describe('leesCollage: migraties', () => {
     } finally { delete MIGRATIES[0]; }
   });
 });
+
+describe('fotovelden van fase 4', () => {
+  const metFoto = (patch: Record<string, unknown>, weg: string[] = []) => {
+    const f: Record<string, unknown> = { ...maakFoto({ x: 0, y: 0, breedte: 100, hoogte: 50, assetId: null }), ...patch };
+    for (const k of weg) delete f[k];
+    return { ...nieuweCollage('vierkant'), elementen: [f] };
+  };
+  it('oude foto zonder verhoudingVast en uitknipsel krijgt de standaard', () => {
+    const c = leesCollage(metFoto({}, ['verhoudingVast', 'uitknipsel']));
+    expect(c.elementen[0]).toMatchObject({ verhoudingVast: true, uitknipsel: false, breedte: 100, hoogte: 50 });
+  });
+  it('bewaarde waarden blijven', () => {
+    const c = leesCollage(metFoto({ verhoudingVast: false, uitknipsel: true }));
+    expect(c.elementen[0]).toMatchObject({ verhoudingVast: false, uitknipsel: true });
+  });
+  it('geen boolean is ongeldig', () => {
+    expect(() => leesCollage(metFoto({ verhoudingVast: 'ja' }))).toThrow(CollageFout);
+    expect(() => leesCollage(metFoto({ uitknipsel: 1 }))).toThrow(CollageFout);
+  });
+});

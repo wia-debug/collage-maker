@@ -38,6 +38,8 @@ export interface FotoElement extends Basis {
   filter: FilterNaam;
   helderheid: number; // -100..100
   contrast: number; // -100..100
+  verhoudingVast: boolean; // alleen hoekankers, verhouding blijft
+  uitknipsel: boolean; // achtergrond weggehaald (toont "Maak sticker")
 }
 
 export interface Omlijning { kleur: string; dikte: number }

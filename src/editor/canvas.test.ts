@@ -116,6 +116,7 @@ describe('CanvasController', () => {
     ctrl = c2;
     const f = maakFoto({ x: 300, y: 300, breedte: 100, hoogte: 100, assetId: 'a' });
     ed.add(f);
+    ed.update(f.id, { verhoudingVast: false });
     expect(transformer(c2).keepRatio()).toBe(false);
     expect(transformer(c2).enabledAnchors()).toEqual(expect.arrayContaining(['middle-left', 'middle-right', 'top-center', 'bottom-center']));
     c2.group(f.id)!.setAttrs({ scaleX: 2, scaleY: 1 });
@@ -128,6 +129,26 @@ describe('CanvasController', () => {
     expect(el.uitsnede!.breedte / el.uitsnede!.hoogte).toBeCloseTo(2);
     ed.undo();
     expect(ed.get().collage.elementen[0].breedte).toBe(100);
+  });
+
+  it('foto met vaste verhouding: alleen hoeken en keepRatio; los: alle ankers', () => {
+    const img = document.createElement('canvas');
+    img.width = 400; img.height = 300;
+    div = document.createElement('div');
+    div.style.cssText = 'width:800px;height:600px;position:fixed;left:0;top:0';
+    document.body.append(div);
+    const ed = createEditor(nieuweCollage('vierkant'));
+    const c2 = new CanvasController(div, ed, { image: () => img });
+    ctrl = c2;
+    const f = maakFoto({ x: 300, y: 300, breedte: 200, hoogte: 150, assetId: 'a' });
+    ed.add(f);
+    expect(transformer(c2).keepRatio()).toBe(true);
+    expect(transformer(c2).enabledAnchors()).toEqual(['top-left', 'top-right', 'bottom-left', 'bottom-right']);
+    ed.update(f.id, { verhoudingVast: false });
+    expect(transformer(c2).keepRatio()).toBe(false);
+    expect(transformer(c2).enabledAnchors()).toHaveLength(8);
+    ed.undo();
+    expect(transformer(c2).keepRatio()).toBe(true);
   });
 
   it('foto: draaien of evenredig schalen houdt de uitsnede; nul-schaal geeft geen NaN', () => {
