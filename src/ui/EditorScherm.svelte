@@ -8,6 +8,8 @@
   import ExportDialoog from './ExportDialoog.svelte';
   import DeelDialoog from './DeelDialoog.svelte';
   import CameraDialoog from './CameraDialoog.svelte';
+  import VoortgangDialoog from './VoortgangDialoog.svelte';
+  import { ACHTERGRONDTEKST, AchtergrondFout, verwijderAchtergrond } from '../import/achtergrond';
   import type { Instellingen } from '../storage/instellingen';
   import { maakVorm } from '../document/create';
   import { createEditor } from '../editor/store';
@@ -161,7 +163,25 @@
   function openCamera(vakId?: string) { cameraVak = vakId; toonCamera = true; }
 
   let bijsnijden = $state<{ id: string; bron: HTMLImageElement; start: Uitsnede | null } | null>(null);
-  const modaalOpen = $derived(!!bijsnijden || toonExport || toonDeel || toonCamera || vraagTerug);
+  let achtergrondBezig = $state<{ deel: number | null; download: boolean } | null>(null);
+  const modaalOpen = $derived(!!bijsnijden || toonExport || toonDeel || toonCamera || vraagTerug || !!achtergrondBezig);
+
+  async function achtergrondWeg(id: string) {
+    const f = editor.get().collage.elementen.find((e) => e.id === id);
+    if (f?.type !== 'foto' || !f.assetId || achtergrondBezig) return;
+    const bron = assets.blob(f.assetId);
+    if (!bron) return;
+    achtergrondBezig = { deel: null, download: false };
+    try {
+      const uit = await verwijderAchtergrond(bron, (d) => { achtergrondBezig = { deel: d < 1 ? d : null, download: d < 1 }; });
+      const nieuw = await assets.addBlob(uit);
+      editor.update(id, { assetId: nieuw, uitsnede: null, masker: 'rechthoek', uitknipsel: true });
+    } catch (e) {
+      toon(e instanceof AchtergrondFout ? ACHTERGRONDTEKST[e.code] : ACHTERGRONDTEKST.mislukt, 'warning');
+    } finally {
+      achtergrondBezig = null;
+    }
+  }
 
   function openBijsnijden(id: string) {
     const f = editor.get().collage.elementen.find((e) => e.id === id) as FotoElement | undefined;
@@ -269,13 +289,13 @@
   <div class="vak-tools"><GereedschapBalk actief={paneel} onKies={(p) => { if (p === 'achtergrond') editor.select(null); paneel = paneel === p ? null : p; }} /></div>
   <div class="vak-canvas" id="canvas-vlak" role="application" aria-label="Collage">
     <div class="canvas" bind:this={canvasEl}></div>
-    {#if geselecteerd}<ContextBalk {editor} el={geselecteerd} onTekst={() => wijzigTekst(geselecteerd!.id)} onBijsnijden={() => openBijsnijden(geselecteerd!.id)} />{/if}
+    {#if geselecteerd}<ContextBalk {editor} el={geselecteerd} onTekst={() => wijzigTekst(geselecteerd!.id)} onBijsnijden={() => openBijsnijden(geselecteerd!.id)} onAchtergrondWeg={() => void achtergrondWeg(geselecteerd!.id)} />{/if}
   </div>
   {#if paneel}
     <aside class="vak-paneel" id="paneel-{paneel}">
       {#if paneel === 'vormen'}<VormPaneel {editor} el={geselecteerd} />{/if}
       {#if paneel === 'stickers'}<StickerPaneel {editor} {assets} el={geselecteerd} {startPakket} />{/if}
-      {#if paneel === 'foto'}<FotoPaneel {editor} {assets} el={geselecteerd} onKiesFoto={kiesFoto} onCamera={openCamera} onBijsnijden={openBijsnijden} />{/if}
+      {#if paneel === 'foto'}<FotoPaneel {editor} {assets} el={geselecteerd} onKiesFoto={kiesFoto} onCamera={openCamera} onBijsnijden={openBijsnijden} onAchtergrondWeg={(id) => void achtergrondWeg(id)} />{/if}
       {#if paneel === 'tekst'}<TekstPaneel {editor} el={geselecteerd} onNieuw={() => tekstInvoer.openen('', null)} onWijzig={wijzigTekst} />{/if}
       {#if paneel === 'tekenen'}<TekenPaneel {controller} />{/if}
       {#if paneel === 'achtergrond'}<AchtergrondPaneel {editor} {assets} achtergrond={$editorState.collage.achtergrond} />{/if}
@@ -295,6 +315,8 @@
     onSluit={() => (toonCamera = false)}
   />
 {/if}
+
+{#if achtergrondBezig}<VoortgangDialoog titel={achtergrondBezig.download ? 'Even het hulpmiddel ophalen...' : 'Bezig...'} deel={achtergrondBezig.deel} />{/if}
 
 {#if vraagTerug}
   <Dialoog

@@ -20,7 +20,13 @@ const pwa = VitePWA({
   },
   workbox: {
     globPatterns: ['**/*.{js,css,html,svg,woff2,png,ico}'],
+    globIgnores: ['modellen/**'],
     maximumFileSizeToCacheInBytes: 5_000_000,
+    runtimeCaching: [{
+      urlPattern: ({ url }) => url.pathname.includes('/modellen/'),
+      handler: 'CacheFirst',
+      options: { cacheName: 'modellen', expiration: { maxEntries: 60 } },
+    }],
     cleanupOutdatedCaches: true,
     clientsClaim: true,
     skipWaiting: false,

@@ -2,7 +2,7 @@
   import Icon from './Icon.svelte';
   import type { Element } from '../document/types';
   import type { Editor } from '../editor/store';
-  let { editor, el, onTekst, onBijsnijden }: { editor: Editor; el: Element; onTekst?: () => void; onBijsnijden?: () => void } = $props();
+  let { editor, el, onTekst, onBijsnijden, onAchtergrondWeg }: { editor: Editor; el: Element; onTekst?: () => void; onBijsnijden?: () => void; onAchtergrondWeg?: () => void } = $props();
 </script>
 
 <div class="context-balk" role="toolbar" aria-label="Bewerk element">
@@ -19,6 +19,9 @@
       <button id="ctx-verhouding" aria-pressed={el.verhoudingVast} onclick={() => editor.update(el.id, { verhoudingVast: !el.verhoudingVast })}>
         <Icon name={el.verhoudingVast ? 'lock-simple-open' : 'lock-simple'} /><span>{el.verhoudingVast ? 'Verhouding los' : 'Verhouding vast'}</span>
       </button>
+    {/if}
+    {#if el.type === 'foto' && el.assetId && onAchtergrondWeg}
+      <button id="ctx-achtergrond-weg" onclick={onAchtergrondWeg}><Icon name="magic-wand" /><span>Weg</span></button>
     {/if}
     <button id="ctx-voor" onclick={() => editor.move(el.id, 'voor')}><Icon name="arrow-line-up" /><span>Voor</span></button>
     <button id="ctx-achter" onclick={() => editor.move(el.id, 'achter')}><Icon name="arrow-line-down" /><span>Achter</span></button>
