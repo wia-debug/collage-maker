@@ -8,7 +8,7 @@ import type { Collage } from '../document/types';
 
 afterEach(() => { vi.useRealTimers(); });
 
-const toestand = (c: Collage): EditorState => ({ collage: c, selectedId: null, canUndo: false, canRedo: false });
+const toestand = (c: Collage): EditorState => ({ collage: c, selectedIds: [], selectedId: null, canUndo: false, canRedo: false });
 
 describe('autosave', () => {
   it('bewaart niet bij openen, wel na een wijziging (debounced, laatste wint)', async () => {

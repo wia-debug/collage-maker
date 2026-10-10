@@ -169,3 +169,95 @@ describe('editor-store meldingen', () => {
     expect(weg).toBe(1);
   });
 });
+
+describe('meerdere kiezen en groeperen', () => {
+  const opzet = () => {
+    const ed = createEditor(nieuweCollage('vierkant'));
+    const [a, b, c] = [100, 300, 500].map((x) => maakVorm({ x, y: 100, vorm: 'ster', breedte: 50, hoogte: 50 }));
+    ed.add(a); ed.add(b); ed.add(c);
+    return { ed, a, b, c };
+  };
+
+  it('selectedId alleen bij precies één', () => {
+    const { ed, a, b } = opzet();
+    ed.selectMany([a.id, b.id]);
+    expect(ed.get().selectedIds).toEqual([a.id, b.id]);
+    expect(ed.get().selectedId).toBeNull();
+    ed.select(a.id);
+    expect(ed.get().selectedId).toBe(a.id);
+  });
+
+  it('groeperen is één stap en kiezen breidt uit naar de groep', () => {
+    const { ed, a, b, c } = opzet();
+    ed.groepeer([a.id, b.id]);
+    const g = ed.get().collage.elementen.find((e) => e.id === a.id)!.groep!;
+    expect(g).toMatch(/^[0-9a-f]{16}$/);
+    ed.select(null);
+    ed.select(b.id);
+    expect([...ed.get().selectedIds].sort()).toEqual([a.id, b.id].sort());
+    ed.toggleSelect(c.id);
+    expect(ed.get().selectedIds).toHaveLength(3);
+    ed.toggleSelect(a.id);
+    expect(ed.get().selectedIds).toEqual([c.id]);
+    ed.undo();
+    expect(ed.get().collage.elementen.every((e) => e.groep === undefined)).toBe(true);
+  });
+
+  it('groep los verwijdert het veld bij alle leden in één stap', () => {
+    const { ed, a, b } = opzet();
+    ed.groepeer([a.id, b.id]);
+    const g = ed.get().collage.elementen[0].groep!;
+    ed.groepLos(g);
+    expect(ed.get().collage.elementen.some((e) => 'groep' in e)).toBe(false);
+    ed.undo();
+    expect(ed.get().collage.elementen.filter((e) => e.groep === g)).toHaveLength(2);
+  });
+
+  it('updateMany is één stap; zonder verandering geen stap', () => {
+    const { ed, a, b } = opzet();
+    ed.updateMany({ [a.id]: { x: 1 }, [b.id]: { x: 2 } });
+    expect(ed.get().collage.elementen.map((e) => e.x).slice(0, 2)).toEqual([1, 2]);
+    ed.undo();
+    expect(ed.get().collage.elementen[0].x).toBe(100);
+    ed.redo();
+    const voor = ed.get().collage;
+    ed.updateMany({ [a.id]: { x: 1 } });
+    expect(ed.get().collage).toBe(voor);
+  });
+
+  it('duplicateMany: kopieën verschoven, nieuwe groep, worden de keuze, vastgezette niet', () => {
+    const { ed, a, b, c } = opzet();
+    ed.groepeer([a.id, b.id]);
+    ed.update(c.id, { vergrendeld: true });
+    const oud = ed.get().collage.elementen[0].groep;
+    ed.duplicateMany([a.id, b.id, c.id]);
+    const els = ed.get().collage.elementen;
+    expect(els).toHaveLength(5);
+    const kopie = els.slice(3);
+    expect(kopie.map((e) => e.x)).toEqual([130, 330]);
+    expect(kopie[0].groep).toBe(kopie[1].groep);
+    expect(kopie[0].groep).not.toBe(oud);
+    expect(ed.get().selectedIds).toEqual(kopie.map((e) => e.id));
+  });
+
+  it('moveMany houdt de onderlinge volgorde', () => {
+    const { ed, a, b, c } = opzet();
+    ed.moveMany([a.id, b.id], 'voorste');
+    expect(ed.get().collage.elementen.map((e) => e.id)).toEqual([c.id, a.id, b.id]);
+    ed.moveMany([a.id, b.id], 'achter');
+    expect(ed.get().collage.elementen.map((e) => e.id)).toEqual([a.id, b.id, c.id]);
+    const voor = ed.get().collage;
+    ed.moveMany([a.id, b.id], 'achter');
+    expect(ed.get().collage).toBe(voor);
+  });
+
+  it('keuze wordt opgeschoond na wissen en ongedaan maken', () => {
+    const { ed, a, b } = opzet();
+    ed.selectMany([a.id, b.id]);
+    ed.removeMany([a.id]);
+    expect(ed.get().selectedIds).toEqual([b.id]);
+    ed.add(maakVorm({ x: 0, y: 0, vorm: 'hart', breedte: 10, hoogte: 10 }));
+    ed.undo();
+    expect(ed.get().selectedIds).toEqual([]);
+  });
+});
