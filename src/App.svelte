@@ -10,6 +10,7 @@
   import { teVragen } from './storage/opruimen';
   import LeerkrachtMenu from './ui/LeerkrachtMenu.svelte';
   import OntvangDialoog from './ui/OntvangDialoog.svelte';
+  import KlasOntvangScherm from './ui/KlasOntvangScherm.svelte';
   import type { Collage } from './document/types';
   import { db } from './storage/db';
   import { opstart } from './storage/opstart';
@@ -95,6 +96,7 @@
   let profielen = $state.raw<Profiel[]>([]);
   let nieuwProfiel = $state(false);
   let toonLeerkracht = $state(false);
+  let scherm = $state<'klas' | 'galerij' | null>(null);
   let toonOntvang = $state(false);
 
   async function sluitLeerkracht() {
@@ -156,7 +158,10 @@
   <OntvangDialoog {inst} onOpen={(p) => { toonOntvang = false; void openBestand(p); }} onSluit={() => (toonOntvang = false)} />
 {/if}
 {#if toonLeerkracht && inst}
-  <LeerkrachtMenu {inst} onInstellingen={nieuweInstellingen} onSluit={sluitLeerkracht} />
+  <LeerkrachtMenu {inst} onInstellingen={nieuweInstellingen} onSluit={sluitLeerkracht} onKlas={() => { toonLeerkracht = false; scherm = 'klas'; }} onGalerij={() => { toonLeerkracht = false; scherm = 'galerij'; }} />
+{/if}
+{#if scherm === 'klas' && inst}
+  <KlasOntvangScherm {inst} onGalerij={() => (scherm = 'galerij')} onSluit={() => (scherm = null)} />
 {/if}
 {#if teOpruimen.length && !collage}
   <OpruimDialoog collages={teOpruimen} onJa={() => void opruimenJa()} onLater={() => (teOpruimen = [])} />

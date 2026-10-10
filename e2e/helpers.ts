@@ -74,6 +74,16 @@ export async function nepRelay(pages: Page[]): Promise<Map<string, Buffer>> {
   return opslag;
 }
 
+export async function leesKlasCode(p: Page): Promise<string[]> {
+  await expect(p.locator('#klas-code [data-symbool]')).toHaveCount(4, { timeout: 15_000 });
+  return p.locator('#klas-code [data-symbool]').evaluateAll((els) => els.map((e) => e.getAttribute('data-symbool')!));
+}
+
+export async function openLeerkrachtMenu(p: Page, code = '123456'): Promise<void> {
+  await p.click('#knop-leerkracht');
+  for (const c of code) await p.click(`#cijfer-${c}`);
+}
+
 declare global {
   interface Window { __collage: any }
 }

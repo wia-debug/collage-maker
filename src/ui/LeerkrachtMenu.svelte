@@ -12,7 +12,7 @@
   import { startTour, tourGezien } from '../tour/tour';
   import { toon } from './toast';
 
-  let { inst, onInstellingen, onSluit }: { inst: Instellingen; onInstellingen: (i: Instellingen) => void; onSluit: () => void } = $props();
+  let { inst, onInstellingen, onSluit, onKlas, onGalerij }: { inst: Instellingen; onInstellingen: (i: Instellingen) => void; onSluit: () => void; onKlas: () => void; onGalerij: () => void } = $props();
   let open = $state(false);
   let fout = $state('');
   let profielen = $state.raw<Profiel[]>([]);
@@ -121,6 +121,13 @@
       {/if}
       <button onclick={() => (pinVoor = null)}>Annuleer</button>
     {:else}
+      <section>
+        <h2>Klas</h2>
+        <div class="rij">
+          <button id="klas-ontvangen" onclick={onKlas}><Icon name="chalkboard-teacher" /> Klas ontvangen</button>
+          <button id="galerij-open" onclick={onGalerij}><Icon name="images" /> Galerij</button>
+        </div>
+      </section>
       <section>
         <h2>Code wijzigen</h2>
         {#if standaardCode}

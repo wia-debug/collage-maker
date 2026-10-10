@@ -15,6 +15,7 @@ export const TOURS: Record<TourId, DriveStep[]> = {
     stap('#knop-bewaar', 'Bewaren', 'Klaar? Bewaar je collage als foto of als PDF.'),
   ],
   leerkracht: [
+    stap('#klas-ontvangen', 'Klas ontvangen', 'Toon een code op het bord. Kinderen sturen hun collage naar jou.'),
     stap('#toestel-ipad', 'Toestel', 'Kies hier hoe dit toestel gebruikt wordt. Dat bepaalt hoe collages bewaard worden.'),
     stap('#alles-wissen', 'Alles wissen', 'Wis alle profielen en collages, bijvoorbeeld aan het einde van het schooljaar.'),
   ],
