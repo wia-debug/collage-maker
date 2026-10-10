@@ -6,7 +6,7 @@
   import Dialoog from './Dialoog.svelte';
   import { db } from '../storage/db';
   import { controleerCode, maakHash } from '../storage/hash';
-  import { profielenActief, schrijfInstellingen, type Instellingen, type Toestel } from '../storage/instellingen';
+  import { profielenActief, schrijfInstellingen, type CloudDelen, type Instellingen, type Toestel } from '../storage/instellingen';
   import { lijstProfielen, PIN_LENGTE, PIN_SYMBOLEN, wisProfiel, zetPin, type Profiel } from '../storage/profielen';
   import { STANDAARDCODE, wisAlles } from '../storage/opstart';
   import { startTour, tourGezien } from '../tour/tour';
@@ -27,6 +27,11 @@
     { id: 'ipad', naam: 'Gedeelde iPad', icoon: 'device-tablet' },
     { id: 'chromebook', naam: 'Chromebook', icoon: 'laptop' },
     { id: 'pc', naam: 'Computer', icoon: 'desktop' },
+  ];
+
+  const relayIngesteld = !!import.meta.env.VITE_RELAY_URL;
+  const CLOUD: { id: CloudDelen; naam: string }[] = [
+    { id: 'nooit', naam: 'Nooit' }, { id: 'kind', naam: 'Kind vragen' }, { id: 'leerkracht', naam: 'Mij vragen' },
   ];
 
   let tourTimer: ReturnType<typeof setTimeout> | undefined;
@@ -138,6 +143,16 @@
           </button>
         {/if}
       </section>
+      <section>
+        <h2>Delen via de server</h2>
+        <p>Als het netwerk rechtstreeks delen blokkeert, mag de collage dan via onze server gaan?</p>
+        {#if !relayIngesteld}<p class="let-op">Er is nog geen server ingesteld. Delen gaat dan alleen rechtstreeks.</p>{/if}
+        <div class="rij">
+          {#each CLOUD as c}
+            <button id="cloud-{c.id}" class:actief={inst.cloudDelen === c.id} aria-pressed={inst.cloudDelen === c.id} onclick={() => zet({ cloudDelen: c.id })}>{c.naam}</button>
+          {/each}
+        </div>
+      </section>
       {#if profielenActief(inst)}
         <section>
           <h2>Profielen</h2>
@@ -196,5 +211,6 @@
   .naam { flex: 1; display: flex; align-items: center; gap: 8px; font-weight: 700; }
   li button { padding: 0 14px; background: var(--creme); }
   .gevaar { color: #c0392b; }
+  .let-op { font-weight: 700; margin: 0; }
   .waarschuwing { margin: 0; font-weight: 700; color: #9a3412; }
 </style>

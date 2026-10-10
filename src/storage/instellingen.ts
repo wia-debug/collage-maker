@@ -2,9 +2,10 @@ import type { CollageDb } from './db';
 import type { GehashteCode } from './hash';
 
 export type Toestel = 'ipad' | 'chromebook' | 'pc';
-export interface Instellingen { toestel: Toestel | null; profielenAan: boolean; master: GehashteCode | null }
+export type CloudDelen = 'nooit' | 'kind' | 'leerkracht';
+export interface Instellingen { toestel: Toestel | null; profielenAan: boolean; master: GehashteCode | null; cloudDelen: CloudDelen }
 
-const STANDAARD: Instellingen = { toestel: null, profielenAan: false, master: null };
+const STANDAARD: Instellingen = { toestel: null, profielenAan: false, master: null, cloudDelen: 'leerkracht' };
 
 export async function leesInstellingen(db: CollageDb): Promise<Instellingen> {
   const r = await db.instellingen.get('app');
