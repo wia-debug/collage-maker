@@ -28,3 +28,11 @@ Kleinere punten uit de reviews van fase 2. Niet blokkerend.
 - Task 11: minor (deferred): no test for "Niet wissen" cancel, tour on first open, tour keys gone after alles wissen; menu no Escape/focus trap
 - Task 12: minor (deferred): teVragen await without try/catch; profile switch during await race; dialog may stack over chooser/menu; no Chromebook/profile-scope e2e
 - Task 13: minor (deferred): doc should say dev:lan only on trusted network; self-signed cert likely blocks service worker registration (offline/PWA test needs real https host)
+
+## Uit de review van de aanpassingen na fase 2
+
+- Automatisch bewaren schrijft ook tussenstanden van een schuifje weg (onschuldig, wel extra schrijfwerk).
+- Voorbeeld van helderheid/contrast herberekent het filter bij elke beweging; overweeg `requestAnimationFrame`-throttling op iPad.
+- Foto zonder geladen afbeelding: vrije hoeken geven ongelijke schaal (uitrekken).
+- Tijdens het slepen van een foto-hoek rekt de foto zichtbaar uit; pas bij loslaten wordt hij juist bijgesneden.
+- Een gewijzigde leerkrachtcode op Chromebook blijft niet bewaard (alles wordt gewist bij uitloggen).
