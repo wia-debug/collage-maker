@@ -25,4 +25,4 @@ Het ontvangende toestel opent op de server een brievenbus voor zijn code en krij
 
 ## Wat kan er misgaan?
 
-De codes zijn kort. Wie binnen de 10 minuten een code raadt, kan een ongewenste collage sturen. Het kind ziet die eerst en kan hem weggooien. Niemand kan een collage ophalen die voor iemand anders bedoeld is.
+De codes zijn kort. Wie binnen de 10 minuten een code raadt, kan een ongewenste collage sturen. Het kind ziet die eerst en kan hem weggooien. Een collage ophalen kan alleen het toestel dat de brievenbus voor die code heeft geopend. Uitzondering: als de ontvanger geen brievenbus kon openen (server druk, of instelling "Nooit"), zou iemand die de code afluistert er zelf een kunnen openen. Zeg codes daarom niet luidop door de klas.
