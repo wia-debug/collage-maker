@@ -4,6 +4,8 @@
   import Icon from './Icon.svelte';
   import BijsnijDialoog from './BijsnijDialoog.svelte';
   import ExportDialoog from './ExportDialoog.svelte';
+  import DeelDialoog from './DeelDialoog.svelte';
+  import type { Instellingen } from '../storage/instellingen';
   import { maakVorm } from '../document/create';
   import { createEditor } from '../editor/store';
   import { CanvasController } from '../editor/canvas';
@@ -35,7 +37,7 @@
   import { startHerinnering } from '../storage/herinnering';
   import type { Toestel } from '../storage/instellingen';
 
-  let { collage, opdracht = null, startPakket = null, toestel, vooraf, onTerug }: { collage: Collage; opdracht?: string | null; startPakket?: string | null; toestel: Toestel; vooraf?: AssetStore; onTerug: () => void } = $props();
+  let { collage, opdracht = null, startPakket = null, toestel, inst, vooraf, onTerug }: { collage: Collage; opdracht?: string | null; startPakket?: string | null; toestel: Toestel; inst: Instellingen; vooraf?: AssetStore; onTerug: () => void } = $props();
 
   const editor = createEditor(untrack(() => collage));
   const assets = untrack(() => vooraf) ?? new AssetStore();
@@ -85,6 +87,7 @@
   let toonOpdracht = $state(true);
   let vraagTerug = $state(false);
   let toonExport = $state(false);
+  let toonDeel = $state(false);
   let selectieVoorExport: string | null = null;
 
   const geselecteerd = $derived($editorState.collage.elementen.find((e) => e.id === $editorState.selectedId) ?? null);
@@ -146,7 +149,7 @@
   }
 
   let bijsnijden = $state<{ id: string; bron: HTMLImageElement; start: Uitsnede | null } | null>(null);
-  const modaalOpen = $derived(!!bijsnijden || toonExport || vraagTerug);
+  const modaalOpen = $derived(!!bijsnijden || toonExport || toonDeel || vraagTerug);
 
   function openBijsnijden(id: string) {
     const f = editor.get().collage.elementen.find((e) => e.id === id) as FotoElement | undefined;
@@ -241,6 +244,7 @@
       onOpnieuw={() => editor.redo()}
       onHelp={() => startTour(paneel ?? 'editor')}
       onBewaar={openBewaren}
+      onDeel={() => { editor.select(null); toonDeel = true; }}
     />
   </div>
   {#if opdracht && toonOpdracht}
@@ -296,6 +300,10 @@
 
 {#if toonExport && controller}
   <ExportDialoog {controller} metBestand={toestel !== 'ipad'} collage={$editorState.collage} {assets} onBestandBewaard={() => (laatsteBestand = editor.get().collage)} onSluit={sluitExport} />
+{/if}
+
+{#if toonDeel && controller}
+  <DeelDialoog {controller} collage={$editorState.collage} {assets} {inst} onSluit={() => (toonDeel = false)} />
 {/if}
 
 {#if bijsnijden}

@@ -10,9 +10,9 @@
   import type { Profiel } from '../storage/profielen';
   import MijnCollages from './MijnCollages.svelte';
   import type { CollageSamenvatting } from '../storage/collages';
-  let { onStart, profiel = null, onWissel, collages = [], onOpen, onWis, onOpenBestand, onLeerkracht }: {
+  let { onStart, profiel = null, onWissel, collages = [], onOpen, onWis, onOpenBestand, onLeerkracht, onOntvang }: {
     onStart: (c: Collage, opdracht?: string, pakket?: string) => void; profiel?: Profiel | null; onWissel?: () => void;
-    collages?: CollageSamenvatting[]; onOpen?: (id: string) => void; onWis?: (id: string) => void; onOpenBestand?: (f: File) => void; onLeerkracht?: () => void;
+    collages?: CollageSamenvatting[]; onOpen?: (id: string) => void; onWis?: (id: string) => void; onOpenBestand?: (f: File) => void; onLeerkracht?: () => void; onOntvang?: () => void;
   } = $props();
   let stap = $state<'menu' | 'formaat' | 'templates' | 'uitdagingen'>('menu');
   let bestandInput: HTMLInputElement;
@@ -40,6 +40,11 @@
       <button id="start-uitdaging" class="kaart" style:--kleur="var(--lavendel)" onclick={() => (stap = 'uitdagingen')}>
         <Icon name="trophy" size={64} /><span>Uitdaging</span>
       </button>
+      {#if onOntvang}
+        <button id="start-ontvang" class="kaart" style:--kleur="var(--zon)" onclick={onOntvang}>
+          <Icon name="download-simple" size={64} /><span>Ontvang</span>
+        </button>
+      {/if}
       {#if onOpenBestand}
         <button id="start-open" class="kaart" style:--kleur="var(--mint)" onclick={() => { bestandInput.value = ''; bestandInput.click(); }}>
           <Icon name="folder-open" size={64} /><span>Open bestand</span>

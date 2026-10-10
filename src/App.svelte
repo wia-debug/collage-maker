@@ -6,6 +6,7 @@
   import OpruimDialoog from './ui/OpruimDialoog.svelte';
   import { teVragen } from './storage/opruimen';
   import LeerkrachtMenu from './ui/LeerkrachtMenu.svelte';
+  import OntvangDialoog from './ui/OntvangDialoog.svelte';
   import type { Collage } from './document/types';
   import { db } from './storage/db';
   import { opstart } from './storage/opstart';
@@ -66,7 +67,7 @@
     }
   }
 
-  async function openBestand(f: File) {
+  async function openBestand(f: Blob) {
     try {
       const { collage: c, blobs } = await vanBestand(f);
       const a = new AssetStore();
@@ -91,6 +92,7 @@
   let profielen = $state.raw<Profiel[]>([]);
   let nieuwProfiel = $state(false);
   let toonLeerkracht = $state(false);
+  let toonOntvang = $state(false);
 
   async function sluitLeerkracht() {
     toonLeerkracht = false;
@@ -141,9 +143,12 @@
     <ProfielKiezer {profielen} onGekozen={kiesProfiel} onNieuw={() => (nieuwProfiel = true)} onLeerkracht={() => (toonLeerkracht = true)} />
   {/if}
 {:else if collage}
-  <EditorScherm {collage} {opdracht} startPakket={pakket} toestel={inst.toestel ?? 'ipad'} vooraf={editorAssets} onTerug={terug} />
+  <EditorScherm {collage} {opdracht} startPakket={pakket} toestel={inst.toestel ?? 'ipad'} {inst} vooraf={editorAssets} onTerug={terug} />
 {:else}
-  <StartScherm onStart={start} {profiel} onWissel={profielenActief(inst) ? wissel : undefined} {collages} onOpen={open} onWis={wis} onOpenBestand={inst.toestel === 'ipad' ? undefined : openBestand} onLeerkracht={() => (toonLeerkracht = true)} />
+  <StartScherm onStart={start} {profiel} onWissel={profielenActief(inst) ? wissel : undefined} {collages} onOpen={open} onWis={wis} onOpenBestand={inst.toestel === 'ipad' ? undefined : openBestand} onLeerkracht={() => (toonLeerkracht = true)} onOntvang={() => (toonOntvang = true)} />
+{/if}
+{#if toonOntvang && inst && !collage}
+  <OntvangDialoog {inst} onOpen={(p) => { toonOntvang = false; void openBestand(p); }} onSluit={() => (toonOntvang = false)} />
 {/if}
 {#if toonLeerkracht && inst}
   <LeerkrachtMenu {inst} onInstellingen={nieuweInstellingen} onSluit={sluitLeerkracht} />

@@ -1,8 +1,8 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  let { naam, kanOngedaan, kanOpnieuw, onTerug, onOngedaan, onOpnieuw, onHelp, onBewaar, onNaam }: {
+  let { naam, kanOngedaan, kanOpnieuw, onTerug, onOngedaan, onOpnieuw, onHelp, onBewaar, onNaam, onDeel }: {
     naam: string; kanOngedaan: boolean; kanOpnieuw: boolean;
-    onTerug: () => void; onOngedaan: () => void; onOpnieuw: () => void; onHelp?: () => void; onBewaar?: () => void; onNaam?: () => void;
+    onTerug: () => void; onOngedaan: () => void; onOpnieuw: () => void; onHelp?: () => void; onBewaar?: () => void; onNaam?: () => void; onDeel?: () => void;
   } = $props();
 </script>
 
@@ -12,6 +12,7 @@
   <button id="knop-ongedaan" aria-label="Ongedaan maken" disabled={!kanOngedaan} onclick={onOngedaan}><Icon name="arrow-counter-clockwise" /></button>
   <button id="knop-opnieuw" aria-label="Opnieuw" disabled={!kanOpnieuw} onclick={onOpnieuw}><Icon name="arrow-clockwise" /></button>
   {#if onHelp}<button id="knop-help" aria-label="Help" onclick={onHelp}><Icon name="question" /></button>{/if}
+  {#if onDeel}<button id="knop-deel" onclick={onDeel}><Icon name="share-network" /><span>Deel</span></button>{/if}
   {#if onBewaar}<button id="knop-bewaar" class="hoofd" onclick={onBewaar}><Icon name="download-simple" /><span>Bewaar</span></button>{/if}
 </header>
 
