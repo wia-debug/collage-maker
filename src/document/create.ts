@@ -11,6 +11,9 @@ export function uuidUitBytes(b: Uint8Array): string {
 // crypto.randomUUID bestaat alleen in een "secure context" (https of localhost); getRandomValues overal.
 export const nieuwId = (): string => uuidUitBytes(crypto.getRandomValues(new Uint8Array(16)));
 
+export const nieuwGroepId = (): string =>
+  Array.from(crypto.getRandomValues(new Uint8Array(8)), (x) => x.toString(16).padStart(2, '0')).join('');
+
 export function nieuweCollage(formaat: Formaat, naam = 'Mijn collage'): Collage {
   const nu = Date.now();
   return { id: nieuwId(), versie: SCHEMA_VERSIE, naam, profielId: null, formaat, achtergrond: { soort: 'kleur', kleur: '#FFFFFF' }, elementen: [], aangemaakt: nu, gewijzigd: nu };

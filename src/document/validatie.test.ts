@@ -136,3 +136,25 @@ describe('fotovelden van fase 4', () => {
     expect(() => leesCollage(metFoto({ uitknipsel: 1 }))).toThrow(CollageFout);
   });
 });
+
+describe('groepen', () => {
+  const vorm = (groep?: unknown) => {
+    const v: Record<string, unknown> = { ...maakVorm({ x: 0, y: 0, vorm: 'ster', breedte: 10, hoogte: 10 }) };
+    if (groep !== undefined) v.groep = groep;
+    return v;
+  };
+  it('oude collage zonder groep blijft geldig', () => {
+    expect(leesCollage({ ...nieuweCollage('vierkant'), elementen: [vorm()] }).elementen[0].groep).toBeUndefined();
+  });
+  it('groep met twee leden blijft', () => {
+    const c = leesCollage({ ...nieuweCollage('vierkant'), elementen: [vorm('aaaaaaaaaaaaaaaa'), vorm('aaaaaaaaaaaaaaaa')] });
+    expect(c.elementen.map((e) => e.groep)).toEqual(['aaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaa']);
+  });
+  it('groep van één wordt losgemaakt', () => {
+    const c = leesCollage({ ...nieuweCollage('vierkant'), elementen: [vorm('bbbbbbbbbbbbbbbb'), vorm()] });
+    expect('groep' in c.elementen[0]).toBe(false);
+  });
+  it('groep die geen tekst is, is ongeldig', () => {
+    expect(() => leesCollage({ ...nieuweCollage('vierkant'), elementen: [vorm(5), vorm(5)] })).toThrow(CollageFout);
+  });
+});

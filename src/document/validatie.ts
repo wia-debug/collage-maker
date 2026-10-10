@@ -67,14 +67,21 @@ export function leesCollage(data: unknown): Collage {
   for (const e of c.elementen as unknown[]) {
     if (
       !isObj(e) || typeof e.id !== 'string' || !GETALLEN.every((k) => isGetal(e[k])) ||
-      !isBool(e.gespiegeld) || !isBool(e.vergrendeld) || !velden(e, ELEMENT_VELDEN, e.type)
+      !isBool(e.gespiegeld) || !isBool(e.vergrendeld) || (e.groep !== undefined && typeof e.groep !== 'string') ||
+      !velden(e, ELEMENT_VELDEN, e.type)
     ) {
       throw new CollageFout('ongeldig');
     }
   }
   const nu = Date.now();
-  const elementen = (c.elementen as Record<string, unknown>[]).map((e) =>
-    e.type === 'foto' ? { ...e, verhoudingVast: e.verhoudingVast ?? true, uitknipsel: e.uitknipsel ?? false } : e);
+  // Een groep met maar één lid is geen groep: maak die los.
+  const telling = new Map<string, number>();
+  for (const e of c.elementen as Record<string, unknown>[]) if (typeof e.groep === 'string') telling.set(e.groep, (telling.get(e.groep) ?? 0) + 1);
+  const elementen = (c.elementen as Record<string, unknown>[]).map((e) => {
+    let uit: Record<string, unknown> = e.type === 'foto' ? { ...e, verhoudingVast: e.verhoudingVast ?? true, uitknipsel: e.uitknipsel ?? false } : e;
+    if (typeof uit.groep === 'string' && telling.get(uit.groep) === 1) { const { groep: _, ...rest } = uit; uit = rest; }
+    return uit;
+  });
   return {
     ...c,
     elementen,

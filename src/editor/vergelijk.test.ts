@@ -5,7 +5,7 @@ import { maakFoto } from '../document/create';
 describe('alleenTransform', () => {
   const a = maakFoto({ x: 0, y: 0, breedte: 100, hoogte: 80, assetId: 'a1' });
   it.each([
-    { x: 5 }, { y: 5 }, { rotatie: 30 }, { schaalX: 2 }, { schaalY: 2 }, { gespiegeld: true }, { vergrendeld: true },
+    { x: 5 }, { y: 5 }, { rotatie: 30 }, { schaalX: 2 }, { schaalY: 2 }, { gespiegeld: true }, { vergrendeld: true }, { groep: 'aaaaaaaaaaaaaaaa' },
   ])('true bij alleen %o', (w) => {
     expect(alleenTransform(a, { ...a, ...w })).toBe(true);
   });

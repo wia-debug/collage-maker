@@ -25,6 +25,7 @@ export interface Basis {
   schaalY: number;
   gespiegeld: boolean;
   vergrendeld: boolean;
+  groep?: string; // 16 hex-tekens; elementen met dezelfde groep gedragen zich als één
 }
 
 export interface Uitsnede { x: number; y: number; breedte: number; hoogte: number }

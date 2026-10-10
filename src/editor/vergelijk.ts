@@ -1,6 +1,6 @@
 import type { Element } from '../document/types';
 
-const TRANSFORM = new Set(['x', 'y', 'rotatie', 'schaalX', 'schaalY', 'gespiegeld', 'vergrendeld']);
+const TRANSFORM = new Set(['x', 'y', 'rotatie', 'schaalX', 'schaalY', 'gespiegeld', 'vergrendeld', 'groep']);
 
 /** True als a en b alleen verschillen in transformatie-velden (geen nieuwe render nodig). */
 export function alleenTransform(a: Element, b: Element): boolean {

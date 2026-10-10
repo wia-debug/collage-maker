@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { FORMATEN } from './formats';
-import { maakFoto, maakSticker, maakTekst, maakVorm, nieuweCollage } from './create';
+import { maakFoto, maakSticker, maakTekst, maakVorm, nieuweCollage, nieuwGroepId } from './create';
 import { SCHEMA_VERSIE } from './types';
 
 describe('nieuweCollage', () => {
@@ -54,5 +54,13 @@ describe('elementfabrieken', () => {
     expect(h.vulling).toBe('#FF6B6B');
     expect(h.rand).toBeNull();
     expect(h.doorzichtigheid).toBe(1);
+  });
+});
+
+describe('nieuwGroepId', () => {
+  it('geeft 16 hex-tekens en telkens een andere', () => {
+    const a = nieuwGroepId(), b = nieuwGroepId();
+    expect(a).toMatch(/^[0-9a-f]{16}$/);
+    expect(a).not.toBe(b);
   });
 });
