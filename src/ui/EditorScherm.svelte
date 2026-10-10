@@ -7,6 +7,7 @@
   import BijsnijDialoog from './BijsnijDialoog.svelte';
   import ExportDialoog from './ExportDialoog.svelte';
   import DeelDialoog from './DeelDialoog.svelte';
+  import CameraDialoog from './CameraDialoog.svelte';
   import type { Instellingen } from '../storage/instellingen';
   import { maakVorm } from '../document/create';
   import { createEditor } from '../editor/store';
@@ -154,8 +155,13 @@
     if (el?.type === 'tekst') tekstInvoer.openen(el.tekst, id);
   }
 
+  let toonCamera = $state(false);
+  let cameraVak: string | undefined;
+  let cameraInput: HTMLInputElement;
+  function openCamera(vakId?: string) { cameraVak = vakId; toonCamera = true; }
+
   let bijsnijden = $state<{ id: string; bron: HTMLImageElement; start: Uitsnede | null } | null>(null);
-  const modaalOpen = $derived(!!bijsnijden || toonExport || toonDeel || vraagTerug);
+  const modaalOpen = $derived(!!bijsnijden || toonExport || toonDeel || toonCamera || vraagTerug);
 
   function openBijsnijden(id: string) {
     const f = editor.get().collage.elementen.find((e) => e.id === id) as FotoElement | undefined;
@@ -269,7 +275,7 @@
     <aside class="vak-paneel" id="paneel-{paneel}">
       {#if paneel === 'vormen'}<VormPaneel {editor} el={geselecteerd} />{/if}
       {#if paneel === 'stickers'}<StickerPaneel {editor} {assets} el={geselecteerd} {startPakket} />{/if}
-      {#if paneel === 'foto'}<FotoPaneel {editor} {assets} el={geselecteerd} onKiesFoto={kiesFoto} onBijsnijden={openBijsnijden} />{/if}
+      {#if paneel === 'foto'}<FotoPaneel {editor} {assets} el={geselecteerd} onKiesFoto={kiesFoto} onCamera={openCamera} onBijsnijden={openBijsnijden} />{/if}
       {#if paneel === 'tekst'}<TekstPaneel {editor} el={geselecteerd} onNieuw={() => tekstInvoer.openen('', null)} onWijzig={wijzigTekst} />{/if}
       {#if paneel === 'tekenen'}<TekenPaneel {controller} />{/if}
       {#if paneel === 'achtergrond'}<AchtergrondPaneel {editor} {assets} achtergrond={$editorState.collage.achtergrond} />{/if}
@@ -278,7 +284,17 @@
   {/if}
   <input id="foto-input" class="visueel-verborgen" type="file" accept="image/*" multiple bind:this={fotoInput}
     onchange={() => voegFotosToe([...(fotoInput.files ?? [])], undefined, fotoVak)} />
+  <input id="camera-input" class="visueel-verborgen" type="file" accept="image/*" capture="environment" bind:this={cameraInput}
+    onchange={() => voegFotosToe([...(cameraInput.files ?? [])], undefined, cameraVak)} />
 </div>
+
+{#if toonCamera}
+  <CameraDialoog
+    onFoto={(b) => { toonCamera = false; void voegFotosToe([b], undefined, cameraVak); }}
+    onKiesBestand={() => { toonCamera = false; cameraInput.value = ''; cameraInput.click(); }}
+    onSluit={() => (toonCamera = false)}
+  />
+{/if}
 
 {#if vraagTerug}
   <Dialoog

@@ -8,7 +8,7 @@
   import type { Element, Masker } from '../document/types';
   import type { Editor } from '../editor/store';
 
-  let { editor, assets, el, onKiesFoto, onBijsnijden }: { editor: Editor; assets: AssetStore; el: Element | null; onKiesFoto: (vakId?: string) => void; onBijsnijden: (id: string) => void } = $props();
+  let { editor, assets, el, onKiesFoto, onCamera, onBijsnijden }: { editor: Editor; assets: AssetStore; el: Element | null; onKiesFoto: (vakId?: string) => void; onCamera: (vakId?: string) => void; onBijsnijden: (id: string) => void } = $props();
   const foto = $derived(el?.type === 'foto' ? el : null);
   const assetId = $derived(foto?.assetId ?? null);
   const voorbeelden = $derived.by(() => {
@@ -29,6 +29,7 @@
 <button id="foto-kiezen" class="hoofd breed" onclick={() => onKiesFoto(foto && !foto.assetId ? foto.id : undefined)}>
   <Icon name="image" /> {foto && !foto.assetId ? 'Kies foto voor dit vak' : 'Kies een foto'}
 </button>
+<button id="foto-camera" class="breed" onclick={() => onCamera(foto && !foto.assetId ? foto.id : undefined)}><Icon name="camera" /> Camera</button>
 <p class="tip">Je kan ook een foto op de collage slepen of plakken.</p>
 {#if foto && foto.assetId}
   <button id="foto-bijsnijden" class="breed" onclick={() => onBijsnijden(foto.id)}><Icon name="crop" /> Bijsnijden</button>
