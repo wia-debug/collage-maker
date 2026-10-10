@@ -508,3 +508,82 @@ describe('CanvasController', () => {
     expect(Math.abs((await pixel(ctrl.exportPng(2), 0, 0)).w - 2400)).toBeLessThanOrEqual(1);
   });
 });
+
+describe('meerdere elementen', () => {
+  const twee = (editor: ReturnType<typeof createEditor>) => {
+    const a = maakVorm({ x: 100, y: 100, vorm: 'rechthoek', breedte: 50, hoogte: 50 });
+    const b = maakVorm({ x: 300, y: 100, vorm: 'rechthoek', breedte: 50, hoogte: 50 });
+    editor.add(a); editor.add(b);
+    return { a, b };
+  };
+
+  it('transformer krijgt alle gekozen nodes met hoekankers en vaste verhouding', () => {
+    const { editor, ctrl } = opzet();
+    const { a, b } = twee(editor);
+    editor.selectMany([a.id, b.id]);
+    expect(transformer(ctrl).nodes()).toHaveLength(2);
+    expect(transformer(ctrl).keepRatio()).toBe(true);
+    expect(transformer(ctrl).enabledAnchors()).toHaveLength(4);
+  });
+
+  it('transformend met meerdere nodes is één stap met waarden per element', () => {
+    const { editor, ctrl } = opzet();
+    const { a, b } = twee(editor);
+    editor.selectMany([a.id, b.id]);
+    ctrl.group(a.id)!.setAttrs({ x: 90, scaleX: 2, scaleY: 2, rotation: 10 });
+    ctrl.group(b.id)!.setAttrs({ x: 310, scaleX: 2, scaleY: 2, rotation: 10 });
+    transformer(ctrl).fire('transformend');
+    const [ea, eb] = editor.get().collage.elementen;
+    expect(ea).toMatchObject({ x: 90, schaalX: 2, schaalY: 2, rotatie: 10 });
+    expect(eb).toMatchObject({ x: 310, schaalX: 2, schaalY: 2, rotatie: 10 });
+    editor.undo();
+    expect(editor.get().collage.elementen.map((e) => e.x)).toEqual([100, 300]);
+  });
+
+  it('samen slepen: andere gekozen nodes volgen, één stap', () => {
+    const { editor, ctrl } = opzet();
+    const { a, b } = twee(editor);
+    editor.selectMany([a.id, b.id]);
+    const ga = ctrl.group(a.id)!;
+    ga.fire('dragstart', { target: ga }, true);
+    ga.x(150);
+    ga.fire('dragmove', { target: ga }, true);
+    expect(ctrl.group(b.id)!.x()).toBe(350);
+    ga.fire('dragend', { target: ga }, true);
+    expect(editor.get().collage.elementen.map((e) => e.x)).toEqual([150, 350]);
+    editor.undo();
+    expect(editor.get().collage.elementen.map((e) => e.x)).toEqual([100, 300]);
+  });
+
+  it('selectiekader kiest alleen wat helemaal binnen valt, met de hele groep', () => {
+    const { editor, ctrl } = opzet();
+    const a = maakVorm({ x: 100, y: 100, vorm: 'rechthoek', breedte: 50, hoogte: 50 });
+    const b = maakVorm({ x: 200, y: 100, vorm: 'rechthoek', breedte: 50, hoogte: 50 });
+    const c = maakVorm({ x: 900, y: 900, vorm: 'rechthoek', breedte: 50, hoogte: 50 });
+    const d = maakVorm({ x: 600, y: 100, vorm: 'rechthoek', breedte: 50, hoogte: 50 });
+    [a, b, c, d].forEach((e) => editor.add(e));
+    editor.groepeer([a.id, c.id]);
+    editor.select(null);
+    ctrl.kiesInKader({ x: 50, y: 50, width: 250, height: 100 });
+    expect([...editor.get().selectedIds].sort()).toEqual([a.id, b.id, c.id].sort());
+  });
+
+  it('meer kiezen: tikken voegt toe en haalt weg', () => {
+    const { editor, ctrl } = opzet();
+    const { a, b } = twee(editor);
+    editor.select(a.id);
+    ctrl.zetMeerKiezen(true);
+    const vorm = ctrl.group(b.id)!.getChildren()[0];
+    ctrl.stage.fire('click', { target: vorm, evt: new MouseEvent('click') }, true);
+    expect(editor.get().selectedIds).toEqual([a.id, b.id]);
+    ctrl.stage.fire('click', { target: vorm, evt: new MouseEvent('click') }, true);
+    expect(editor.get().selectedIds).toEqual([a.id]);
+  });
+
+  it('knijpen: geen enkel element bij meerdere gekozen', () => {
+    const { editor } = opzet();
+    const { a, b } = twee(editor);
+    editor.selectMany([a.id, b.id]);
+    expect(editor.get().selectedId).toBeNull();
+  });
+});
