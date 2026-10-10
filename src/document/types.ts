@@ -5,7 +5,7 @@ export type Pad = 'rechthoek' | 'rond' | 'hart' | 'ster' | 'wolk' | 'blob' | 'dr
 export type Masker = 'rechthoek' | 'rond' | 'hart' | 'ster' | 'wolk' | 'blob';
 export type KaderStijl = 'geen' | 'effen' | 'polaroid' | 'plakband' | 'gescheurd' | 'stippen' | 'film' | 'goud' | 'krijt' | 'dubbel' | 'schaduw' | 'golf' | 'sterren';
 export type FilterNaam = 'normaal' | 'zwartwit' | 'sepia' | 'warm' | 'koel' | 'vrolijk' | 'vervaagd' | 'pixel' | 'strip' | 'negatief';
-export type Patroon = 'stippen' | 'strepen' | 'ruitjes' | 'sterren' | 'papier' | 'karton';
+export type Patroon = 'stippen' | 'strepen' | 'ruitjes' | 'sterren' | 'papier' | 'karton' | 'golfjes' | 'zigzag' | 'hartjes';
 
 export type Achtergrond =
   | { soort: 'kleur'; kleur: string }

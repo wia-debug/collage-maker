@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import Konva from 'konva';
-import { PATRONEN, maakPatroon } from './patronen';
+import { PATRONEN, maakPatroon, tekenPatroon } from './patronen';
 import { renderAchtergrond } from './achtergrond';
 
 describe('maakPatroon', () => {
@@ -8,6 +8,20 @@ describe('maakPatroon', () => {
     const a = maakPatroon(p, '#FF6B6B', '#FFFFFF');
     expect(a.width).toBe(80);
     expect(a.toDataURL()).toBe(maakPatroon(p, '#FF6B6B', '#FFFFFF').toDataURL());
+  });
+
+  it.each(PATRONEN.map((p) => p.patroon))('%s: twee onafhankelijke tekeningen zijn identiek en niet leeg', (p) => {
+    const a = tekenPatroon(p, '#FF6B6B', '#FFFFFF');
+    const b = tekenPatroon(p, '#FF6B6B', '#FFFFFF');
+    expect(a).not.toBe(b);
+    expect(a.width).toBe(80);
+    expect(a.height).toBe(80);
+    expect(a.toDataURL()).toBe(b.toDataURL());
+    expect(a.toDataURL()).not.toBe(tekenPatroon(p, '#FFFFFF', '#FFFFFF').toDataURL());
+  });
+
+  it('bevat de nieuwe patronen', () => {
+    expect(PATRONEN.map((p) => p.patroon)).toEqual(expect.arrayContaining(['golfjes', 'zigzag', 'hartjes']));
   });
 });
 
