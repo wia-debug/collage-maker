@@ -68,7 +68,7 @@ export const TEMPLATES: TemplateDef[] = [
   {
     id: 'huisdier', naam: 'Huisdier', formaat: 'vierkant',
     maak: () => collage('vierkant', 'Mijn huisdier', { soort: 'kleur', kleur: '#E8F7F5' }, [
-      vak(300, 260, 600, 600, { masker: 'blob', kader: { stijl: 'golf', kleur: '#4ECDC4' } }),
+      vak(300, 260, 600, 600, { masker: 'blob', kader: { stijl: 'dubbel', kleur: '#4ECDC4' } }),
       titel('Mijn huisdier', 600, 150, 1100, 120, 'zon'),
       tekst('Naam: ...', 600, 1000, 800, 80, 'fredoka'),
       sticker('dieren/paw-print', 150, 1050, 150, '#A0522D', -20), sticker('dieren/paw-print', 1050, 1050, 150, '#A0522D', 20), sticker('dieren/bone', 1060, 250, 150, '#9CA3AF', 30),

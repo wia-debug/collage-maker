@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import { TEMPLATES, template } from './templates';
 import { STICKER_PACKS } from './stickers';
 import { FORMATEN } from '../document/formats';
 import { maakVoorbeeld } from '../export/voorbeeld';
 import { AssetStore } from './store';
+import { KADER_ALLEEN_RECHTHOEK } from '../elements/kaders';
 
 const alleStickers = new Set(STICKER_PACKS.flatMap((p) => p.stickers.map((s) => `${p.id}/${s}`)));
 
@@ -35,5 +36,15 @@ describe('templates', () => {
   it('maakVoorbeeld geeft een PNG', async () => {
     const url = await maakVoorbeeld(template('verjaardag').maak(), new AssetStore(), 200);
     expect(url).toMatch(/^data:image\/png/);
+  });
+
+  it('gebruikt geen kader dat niet bij het masker past', () => {
+    for (const t of TEMPLATES) {
+      for (const e of t.maak().elementen) {
+        if (e.type !== 'foto') continue;
+        const verboden = e.masker !== 'rechthoek' && KADER_ALLEEN_RECHTHOEK.includes(e.kader.stijl);
+        expect(verboden, `${t.id}: ${e.masker} + ${e.kader.stijl}`).toBe(false);
+      }
+    }
   });
 });

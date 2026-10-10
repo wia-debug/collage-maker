@@ -95,6 +95,8 @@ export function kaderNodes(stijl: KaderStijl, kleur: string, w: number, h: numbe
   const d = Math.max(6, Math.min(w, h) * 0.04);
   const niets = { achter: [], voor: [] };
   if (stijl === 'geen') return niets;
+  // Oudere bestanden kunnen een kader hebben dat niet bij het masker past: val terug op een gewone rand.
+  if (masker !== 'rechthoek' && KADER_ALLEEN_RECHTHOEK.includes(stijl)) stijl = 'effen';
 
   if (masker !== 'rechthoek') {
     switch (stijl) {

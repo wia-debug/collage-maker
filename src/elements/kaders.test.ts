@@ -67,3 +67,14 @@ describe('plakband met motief', () => {
     expect(t.getAttr('fillPatternImage')).toBeInstanceOf(HTMLCanvasElement);
   });
 });
+
+describe('kader dat niet bij het masker past', () => {
+  it('wordt bij een ander masker als gewone rand getekend', () => {
+    for (const stijl of KADER_ALLEEN_RECHTHOEK) {
+      const r = kaderNodes(stijl, '#FF6B6B', 200, 150, 'hart');
+      const eff = kaderNodes('effen', '#FF6B6B', 200, 150, 'hart');
+      expect(r.achter).toHaveLength(eff.achter.length);
+      expect(r.voor).toHaveLength(eff.voor.length);
+    }
+  });
+});
