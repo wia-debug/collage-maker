@@ -14,6 +14,9 @@ describe('klas-export', () => {
   it('maakt unieke, veilige bestandsnamen', () => {
     expect(zipNamen(['Lies', 'lies', 'Lies', 'a/b', '  ', 'Omar'])).toEqual(['Lies.png', 'lies 2.png', 'Lies 3.png', 'a-b.png', 'collage.png', 'Omar.png']);
   });
+  it('vervangt backslash in namen', () => {
+    expect(zipNamen(['a\\b'])).toEqual(['a-b.png']);
+  });
   it('bestandsnaam met datum', () => {
     expect(klasBestandsnaam('zip', new Date(2026, 9, 10))).toBe('klas-2026-10-10.zip');
   });

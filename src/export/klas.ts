@@ -12,7 +12,7 @@ export function zipNamen(namen: string[]): string[] {
   const gezien = new Map<string, number>();
   return namen.map((n) => {
     // eslint-disable-next-line no-control-regex
-    const schoon = n.replace(/[\/:*?"<>|\u0000-\u001f]/g, '-').trim() || 'collage';
+    const schoon = n.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '-').trim() || 'collage';
     const sleutel = schoon.toLocaleLowerCase('nl');
     const aantal = (gezien.get(sleutel) ?? 0) + 1;
     gezien.set(sleutel, aantal);
