@@ -165,6 +165,46 @@ describe('klasmap', () => {
     expect(o.headers.get('Access-Control-Allow-Headers')).toContain('X-Naam');
     expect(o.headers.get('Access-Control-Expose-Headers')).toBe('X-Naam');
   });
+  it('DELETE vraagt het token en wist de hele map', async () => {
+    const e = env();
+    expect((await verwerk(req('DELETE', '/class/abcd'), e)).status).toBe(404);
+    const token = await openKlas(e);
+    await stuur(e, ID(1));
+    expect((await verwerk(req('DELETE', '/class/abcd'), e)).status).toBe(403);
+    expect((await verwerk(req('DELETE', '/class/abcd', undefined, { 'X-Sleutel': 'f'.repeat(32) }), e)).status).toBe(403);
+    expect((await verwerk(req('DELETE', '/class/abcd', undefined, { 'X-Sleutel': token }), e)).status).toBe(204);
+    expect([...(e.BAK as ReturnType<typeof nepBak>).data.keys()].filter((k) => k.startsWith('class/abcd/'))).toEqual([]);
+    expect((await stuur(e, ID(2))).status).toBe(404);
+    expect((await verwerk(req('POST', '/class/abcd'), e)).status).toBe(201);
+    const o = await verwerk(req('OPTIONS', '/class/abcd'), e);
+    expect(o.headers.get('Access-Control-Allow-Methods')).toContain('DELETE');
+  });
+  it('PUT bewaart niet als de map tijdens het uploaden verdween of een nieuw token kreeg', async () => {
+    for (const heropen of [false, true]) {
+      const e = env();
+      const token = await openKlas(e);
+      const r = req('PUT', `/class/abcd/${ID(1)}`, 'pakket', { 'X-Naam': 'Lies' });
+      const leesOrig = r.arrayBuffer.bind(r);
+      r.arrayBuffer = async () => {
+        await verwerk(req('DELETE', '/class/abcd', undefined, { 'X-Sleutel': token }), e);
+        if (heropen) await openKlas(e);
+        return leesOrig();
+      };
+      expect((await verwerk(r, e)).status).toBe(404);
+      expect((e.BAK as ReturnType<typeof nepBak>).data.has(`class/abcd/${ID(1)}`)).toBe(false);
+    }
+  });
+  it('PUT telt verder op de verse map', async () => {
+    const e = env();
+    const token = await openKlas(e);
+    const r = req('PUT', `/class/abcd/${ID(1)}`, 'pakket', { 'X-Naam': 'Lies' });
+    const leesOrig = r.arrayBuffer.bind(r);
+    r.arrayBuffer = async () => { await stuur(e, ID(2)); return leesOrig(); };
+    expect((await verwerk(r, e)).status).toBe(201);
+    const meta = (e.BAK as ReturnType<typeof nepBak>).data.get('class/abcd/map')!.meta;
+    expect(meta.aantal).toBe('2');
+    expect(meta.token).toBe(token);
+  });
   it('relay-routes werken nog', async () => {
     const e = env();
     expect((await verwerk(req('POST', '/relay/abcd'), e)).status).toBe(201);

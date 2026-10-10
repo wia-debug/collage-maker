@@ -77,7 +77,7 @@ function leesNaam(kop: string | null): string | null {
 export async function verwerk(req: Request, env: Env, nu = Date.now()): Promise<Response> {
   const cors: Record<string, string> = {
     'Access-Control-Allow-Origin': env.TOEGESTANE_ORIGIN,
-    'Access-Control-Allow-Methods': 'GET, PUT, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-Sleutel, X-Naam',
     'Access-Control-Expose-Headers': 'X-Naam',
     Vary: 'Origin',
@@ -149,9 +149,20 @@ async function verwerkKlas(
     if (kaart.aantal >= KLAS_MAX || (await env.BAK.get(`${basis}/${id}`))) return antwoord(409);
     const body = await req.arrayBuffer();
     if (body.byteLength > MAX) return antwoord(413);
+    // Tijdens het uploaden kan de leerkracht de map gesloten (of opnieuw geopend) hebben: lees de map opnieuw.
+    const vers = await leesMap(env, basis, nu);
+    if (!vers || vers.token !== kaart.token) return antwoord(404);
+    if (vers.aantal >= KLAS_MAX) return antwoord(409);
     await env.BAK.put(`${basis}/${id}`, body, { customMetadata: { naam: encodeURIComponent(naam) } });
-    await schrijfMap(env, basis, { ...kaart, aantal: kaart.aantal + 1 });
+    await schrijfMap(env, basis, { ...vers, aantal: vers.aantal + 1 });
     return antwoord(201);
+  }
+  if (req.method === 'DELETE' && !id) {
+    const kaart = await leesMap(env, basis, nu);
+    if (!kaart) return antwoord(404);
+    if (req.headers.get('X-Sleutel') !== kaart.token) return antwoord(403);
+    await ruimKlasOp(env, basis);
+    return antwoord(204);
   }
   if (req.method === 'GET') {
     const kaart = await leesMap(env, basis, nu);
