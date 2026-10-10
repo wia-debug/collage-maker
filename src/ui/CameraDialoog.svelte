@@ -11,20 +11,28 @@
   let fout = $state('');
   let genomen = $state.raw<{ blob: Blob; url: string } | null>(null);
   let weg = false;
+  let start = $state(false);
+  let generatie = 0;
 
   async function zetAan() {
+    const mijn = ++generatie;
     stopCamera(stroom);
     stroom = null;
     fout = '';
+    start = true;
     try {
       const s = await startCamera(kant);
-      if (weg) { stopCamera(s); return; }
+      // Een oudere aanvraag (snel wisselen) of de dialoog is al dicht: die stroom meteen stoppen.
+      if (weg || mijn !== generatie) { stopCamera(s); return; }
       stroom = s;
       if (video) { video.srcObject = s; await video.play().catch(() => {}); }
     } catch (e) {
+      if (weg || mijn !== generatie) return;
       fout = e instanceof CameraFout && e.code === 'geweigerd'
         ? 'De camera mag niet aan. Vraag je juf of meester, of kies een foto.'
         : 'Ik vind geen camera. Kies een foto.';
+    } finally {
+      if (mijn === generatie) start = false;
     }
   }
 
@@ -34,9 +42,12 @@
   });
 
   async function neem() {
-    if (!video) return;
-    const blob = await neemFoto(video);
-    genomen = { blob, url: URL.createObjectURL(blob) };
+    if (!video || video.videoWidth === 0) return; // camera nog niet klaar
+    try {
+      const blob = await neemFoto(video);
+      if (weg) return;
+      genomen = { blob, url: URL.createObjectURL(blob) };
+    } catch { /* geen beeld: gewoon opnieuw tikken */ }
   }
   function opnieuw() { if (genomen) URL.revokeObjectURL(genomen.url); genomen = null; }
   function gebruik() { if (genomen) onFoto(genomen.blob); }
@@ -63,7 +74,7 @@
       <video id="camera-video" bind:this={video} playsinline muted class:spiegel={kant === 'user'}></video>
       <div class="knoppen">
         <button id="camera-neem" class="hoofd" onclick={neem}><Icon name="camera" /> Neem foto</button>
-        {#if meer}<button id="camera-wissel" onclick={wissel}><Icon name="camera-rotate" /> Wissel camera</button>{/if}
+        {#if meer}<button id="camera-wissel" disabled={start} onclick={wissel}><Icon name="camera-rotate" /> Wissel camera</button>{/if}
       </div>
     {/if}
     <button id="camera-sluit" onclick={onSluit}>Sluiten</button>
