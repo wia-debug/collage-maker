@@ -35,6 +35,8 @@ test('code wijzigen: oude code geweigerd, nieuwe code werkt, waarschuwing weg', 
   await page.click('#knop-leerkracht');
   await typ(page, '000000');
   await page.click('#code-wijzigen');
+  await typ(page, '000000');
+  await expect(page.getByText('Kies een andere code dan 000000.')).toBeVisible();
   await typ(page, '111111');
   await typ(page, '222222');
   await expect(page.getByText('De codes zijn niet gelijk. Probeer opnieuw.')).toBeVisible();

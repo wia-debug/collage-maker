@@ -50,7 +50,10 @@
   let codeFout = $state('');
   let nieuweEerste = '';
   let standaardCode = $state(false);
-  function nieuweCodeKlaar(c: string) { nieuweEerste = c; codeFout = ''; codeStap = 'herhaal'; }
+  function nieuweCodeKlaar(c: string) {
+    if (c === STANDAARDCODE) { codeFout = `Kies een andere code dan ${STANDAARDCODE}.`; return; }
+    nieuweEerste = c; codeFout = ''; codeStap = 'herhaal';
+  }
   async function nieuweHerhaal(c: string) {
     if (c !== nieuweEerste) { codeFout = 'De codes zijn niet gelijk. Probeer opnieuw.'; codeStap = 'nieuw'; return; }
     try {

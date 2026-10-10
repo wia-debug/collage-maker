@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { ruimTestDbOp } from './testhulp';
 import { maakDb, type CollageDb } from './db';
-import { opstart, toestelUitUrl } from './opstart';
+import { opstart, STANDAARD_HASH, toestelUitUrl } from './opstart';
 import { leesInstellingen, schrijfInstellingen } from './instellingen';
 import { controleerCode } from './hash';
 import { nieuwId } from '../document/create';
@@ -50,5 +50,19 @@ describe('opstart zonder eerstestartscherm', () => {
     const i = await opstart(db, '');
     expect(i).toMatchObject({ toestel: 'pc', profielenAan: true });
     expect(await controleerCode('000000', i.master!)).toBe(true);
+  });
+
+  it('de vaste standaardhash hoort bij 000000 en bij niets anders', async () => {
+    expect(await controleerCode('000000', STANDAARD_HASH)).toBe(true);
+    expect(await controleerCode('000001', STANDAARD_HASH)).toBe(false);
+  });
+
+  it('als bewaren mislukt gaat opstart door met de standaardinstellingen in het geheugen', async () => {
+    const kapot = maakDb(`test-${nieuwId()}`);
+    kapot.instellingen.put = () => Promise.reject(new Error('vol')) as never;
+    const i = await opstart(kapot, '?toestel=chromebook');
+    expect(i).toMatchObject({ toestel: 'chromebook', profielenAan: false });
+    expect(await controleerCode('000000', i.master!)).toBe(true);
+    await ruimTestDbOp(kapot);
   });
 });
