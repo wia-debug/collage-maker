@@ -1,5 +1,5 @@
 export class DeelFout extends Error {
-  constructor(public code: 'niet-gevonden' | 'geen-verbinding' | 'te-groot' | 'relay' | 'code-bezet' | 'geweigerd') { super(code); }
+  constructor(public code: 'niet-gevonden' | 'geen-verbinding' | 'te-groot' | 'relay' | 'code-bezet' | 'geweigerd' | 'geen-leerkracht' | 'klas-vol') { super(code); }
 }
 
 export const DEELTEKST: Record<DeelFout['code'], string> = {
@@ -9,4 +9,6 @@ export const DEELTEKST: Record<DeelFout['code'], string> = {
   relay: 'Delen via de server lukte niet. Probeer het later nog eens.',
   'code-bezet': 'Deze code is al in gebruik. Ik kies een nieuwe.',
   geweigerd: 'De collage is niet gedeeld.',
+  'geen-leerkracht': 'Ik vind de leerkracht niet. Klopt de code?',
+  'klas-vol': 'De leerkracht kan nu niets meer ontvangen.',
 };

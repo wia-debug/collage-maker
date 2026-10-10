@@ -44,7 +44,7 @@ export function deelTimeout(): number {
 export const standaardFabriek: PeerFabriek = (id) =>
   (id ? new Peer(id, peerOpties()) : new Peer(peerOpties())) as unknown as PeerLike;
 
-const isNetwerkFout = (t?: string) => t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed' || t === 'disconnected' || t === 'webrtc' || t === 'browser-incompatible';
+export const isNetwerkFout = (t?: string) => t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed' || t === 'disconnected' || t === 'webrtc' || t === 'browser-incompatible';
 
 export const OVERDRACHT_MS = 60_000;
 
