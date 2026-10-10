@@ -1,0 +1,15 @@
+name = "collagemaker-relay"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+[[r2_buckets]]
+binding = "BAK"
+bucket_name = "collagemaker-relay"
+
+[vars]
+TOEGESTANE_ORIGIN = "https://collagemaker.pages.dev"
+
+[[ratelimits]]
+name = "LIMIET"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }
