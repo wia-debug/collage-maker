@@ -9,6 +9,7 @@
 
   import type { Profiel } from '../storage/profielen';
   import MijnCollages from './MijnCollages.svelte';
+  import Voet from './Voet.svelte';
   import type { CollageSamenvatting } from '../storage/collages';
   let { onStart, profiel = null, onWissel, collages = [], onOpen, onWis, onOpenBestand, onLeerkracht, onOntvang }: {
     onStart: (c: Collage, opdracht?: string, pakket?: string) => void; profiel?: Profiel | null; onWissel?: () => void;
@@ -72,6 +73,7 @@
     <h2>Kies een uitdaging</h2>
     <UitdagingKiezer onKies={(u) => onStart(template(u.templateId).maak(), u.opdracht, u.pakket)} />
   {/if}
+  <Voet />
 </main>
 <input id="bestand-input" class="visueel-verborgen" type="file" accept=".collage,application/zip" bind:this={bestandInput}
   onchange={() => { const f = bestandInput.files?.[0]; if (f && onOpenBestand) onOpenBestand(f); }} />

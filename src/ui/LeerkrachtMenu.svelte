@@ -4,6 +4,7 @@
   import CijferCode from './CijferCode.svelte';
   import SymboolCode from './SymboolCode.svelte';
   import Dialoog from './Dialoog.svelte';
+  import InfoVenster from './InfoVenster.svelte';
   import { db } from '../storage/db';
   import { controleerCode, maakHash } from '../storage/hash';
   import { profielenActief, schrijfInstellingen, type CloudDelen, type Instellingen, type Toestel } from '../storage/instellingen';
@@ -22,6 +23,7 @@
   let eerstePin: string[] = [];
   let wisVoor = $state.raw<Profiel | null>(null);
   let allesWissen = $state(false);
+  let uitleg = $state(false);
 
   const TOESTELLEN: { id: Toestel; naam: string; icoon: string }[] = [
     { id: 'ipad', naam: 'Gedeelde iPad', icoon: 'device-tablet' },
@@ -122,6 +124,10 @@
       <button onclick={() => (pinVoor = null)}>Annuleer</button>
     {:else}
       <section>
+        <h2>Uitleg</h2>
+        <button id="uitleg-open" onclick={() => (uitleg = true)}><Icon name="book-open" /> Hoe werkt de app?</button>
+      </section>
+      <section>
         <h2>Klas</h2>
         <div class="rij">
           <button id="klas-ontvangen" onclick={onKlas}><Icon name="chalkboard-teacher" /> Klas ontvangen</button>
@@ -193,6 +199,41 @@
     {/if}
   </div>
 </div>
+
+{#if uitleg}
+  <InfoVenster id="uitleg" titel="Hoe werkt de app?" onSluit={() => (uitleg = false)}>
+    <h3>Eerst instellen</h3>
+    <ul>
+      <li><strong>Code wijzigen:</strong> de standaardcode is 000000. Kies meteen een eigen code van 6 cijfers, anders kunnen kinderen hier ook in.</li>
+      <li><strong>Toestel:</strong> "Gedeelde iPad" (kinderen kiezen een profiel met een geheime code van 3 symbolen), "Chromebook" (alles verdwijnt bij afmelden, dus bewaren als bestand) of "Computer" (profielen naar keuze).</li>
+    </ul>
+    <h3>Een collage maken</h3>
+    <ul>
+      <li>Op het startscherm kiezen kinderen <strong>Nieuw</strong> (een lege collage), <strong>Template</strong> (een kant-en-klare opmaak) of <strong>Uitdaging</strong> (een opdracht met template en stickers).</li>
+      <li>Links staan de gereedschappen: foto, tekst, stickers, vormen, tekenen en achtergrond. Tik op iets op de collage om het te kiezen; bovenaan verschijnt dan een balk met knoppen (voor, achter, kopie, draaien, spiegelen, vastzetten, weg).</li>
+      <li><strong>Foto's:</strong> kiezen, slepen, plakken of met de camera. Bijsnijden, vormen, kaders en filters staan in het fotopaneel. Een foto houdt zijn verhouding; met "Verhouding los" kan je hem uitrekken.</li>
+      <li><strong>Achtergrond weg</strong> knipt de foto uit (de eerste keer is internet nodig). Met "Maak sticker" komt het uitknipsel bij "Mijn stickers".</li>
+      <li>Foutje? De pijl "ongedaan maken" bovenaan zet het terug. Het vraagteken start een korte rondleiding.</li>
+    </ul>
+    <h3>Bewaren</h3>
+    <ul>
+      <li>De app bewaart vanzelf. Met de knop bewaren maak je een foto (PNG), een PDF of een bestand (.collage) om later verder te werken.</li>
+      <li>Op een Chromebook: altijd als bestand bewaren voor het afmelden.</li>
+    </ul>
+    <h3>Delen en klas ontvangen</h3>
+    <ul>
+      <li><strong>Naar een vriend:</strong> de vriend tikt "Ontvang" en krijgt 4 symbolen; de andere tikt "Deel" en kiest dezelfde symbolen.</li>
+      <li><strong>Naar de leerkracht:</strong> tik hier op "Klas ontvangen" en zet de code op het bord. Kinderen tikken "Deel", dan "Naar de leerkracht", kiezen de code en hun naam. Laat het scherm open tot iedereen klaar is en tik dan op "Stop".</li>
+      <li>In de <strong>Galerij</strong> bekijk je alle inzendingen, toon je ze als diavoorstelling en download je ze als ZIP of PDF.</li>
+      <li>Blokkeert het schoolnetwerk rechtstreeks delen, dan bepaalt "Delen via de server" of de collage via onze server mag gaan.</li>
+    </ul>
+    <h3>Opruimen</h3>
+    <ul>
+      <li>Collages ouder dan 30 dagen: het kind krijgt de vraag om ze te wissen. Na 60 dagen worden ze vanzelf gewist, net als ontvangen inzendingen en eigen stickers.</li>
+      <li>"Alles wissen" wist alle profielen, collages en instellingen op dit toestel, bijvoorbeeld aan het einde van het schooljaar.</li>
+    </ul>
+  </InfoVenster>
+{/if}
 
 {#if wisVoor}
   <Dialoog

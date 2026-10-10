@@ -6,7 +6,8 @@ import { renderAchtergrond } from '../elements/achtergrond';
 import { laadLettertypes } from '../assets/fonts';
 import type { AssetStore } from '../assets/store';
 
-export async function maakVoorbeeld(c: Collage, assets: AssetStore, breedte = 320): Promise<string> {
+// legeVakken: toon lege fotovakken (met kader), bv. voor templatevoorbeelden.
+export async function maakVoorbeeld(c: Collage, assets: AssetStore, breedte = 320, legeVakken = false): Promise<string> {
   await Promise.all([assets.preload(c), laadLettertypes()]);
   const f = FORMATEN[c.formaat];
   const s = breedte / f.breedte;
@@ -16,7 +17,7 @@ export async function maakVoorbeeld(c: Collage, assets: AssetStore, breedte = 32
   laag.add(renderAchtergrond(c.achtergrond, f.breedte, f.hoogte, assets));
   for (const el of c.elementen) laag.add(renderElement(el, assets));
   stage.add(laag);
-  laag.find('.leeg-vak').forEach((n) => n.hide());
+  if (!legeVakken) laag.find('.leeg-vak').forEach((n) => n.hide());
   const url = stage.toDataURL({ pixelRatio: 1 });
   stage.destroy();
   return url;

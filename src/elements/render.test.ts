@@ -9,6 +9,20 @@ import { wordartPreset } from '../assets/wordart-presets';
 
 const leeg = { image: () => undefined };
 
+describe('leeg fotovak met kader', () => {
+  it('tekent het kader, gemarkeerd als leeg-vak zodat export het verbergt', () => {
+    const f = { ...maakFoto({ x: 0, y: 0, breedte: 200, hoogte: 200, assetId: null }), kader: { stijl: 'polaroid' as const, kleur: '#FFFFFF' } };
+    const g = renderFoto(f, leeg);
+    const kader = g.find('.kader');
+    expect(kader.length).toBeGreaterThan(0);
+    expect(kader.every((n) => n.hasName('leeg-vak'))).toBe(true);
+  });
+  it('zonder kader geen kadernodes', () => {
+    const g = renderFoto(maakFoto({ x: 0, y: 0, breedte: 200, hoogte: 200, assetId: null }), leeg);
+    expect(g.find('.kader')).toHaveLength(0);
+  });
+});
+
 describe('renderElement', () => {
   it('vorm: groep met id, naam, middelpunt-oorsprong en rotatie', () => {
     const v = { ...maakVorm({ x: 300, y: 200, vorm: 'hart', breedte: 100, hoogte: 80 }), rotatie: 30 };

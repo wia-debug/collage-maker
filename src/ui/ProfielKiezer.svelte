@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import SymboolCode from './SymboolCode.svelte';
+  import Voet from './Voet.svelte';
   import { db } from '../storage/db';
   import { controleerPin, PIN_LENGTE, PIN_SYMBOLEN, type Profiel } from '../storage/profielen';
 
@@ -39,6 +40,7 @@
     <p class="wie"><Icon name={kies.symbool} size={36} /> {kies.naam}</p>
     <SymboolCode titel="Wat is je geheime code?" symbolen={PIN_SYMBOLEN} lengte={PIN_LENGTE} {fout} onKlaar={pinKlaar} />
   {/if}
+  {#if !kies}<Voet />{/if}
 </main>
 
 <style>

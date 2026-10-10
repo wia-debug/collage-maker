@@ -49,7 +49,9 @@ export function renderFoto(el: FotoElement, ctx: RenderCtx): Konva.Group {
     binnen.clipFunc((c) => tracePad(c as unknown as PathCtx, el.masker, el.breedte, el.hoogte));
   }
   binnen.add(node);
-  const { achter, voor } = leeg ? { achter: [], voor: [] } : kaderNodes(el.kader.stijl, el.kader.kleur, el.breedte, el.hoogte, el.masker, el.kader.motief);
+  const { achter, voor } = kaderNodes(el.kader.stijl, el.kader.kleur, el.breedte, el.hoogte, el.masker, el.kader.motief);
+  // Een leeg vak toont zijn kader alvast; bij exporteren verdwijnt het samen met het vak.
+  if (leeg) for (const n of [...achter, ...voor]) n.addName('leeg-vak');
   g.add(...achter);
   g.add(binnen);
   if (leeg) g.add(plusTeken(el));

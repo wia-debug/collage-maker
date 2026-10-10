@@ -179,7 +179,7 @@
     <div id="klas-code" class="code" aria-label="Klascode">
       {#each code as s}<span class="vak" data-symbool={s} aria-label={SYMBOOL_NAMEN[s] ?? s}><Icon name={s} size={96} /></span>{/each}
     </div>
-    <p class="uitleg">Kinderen tikken <strong>Delen</strong>, dan <strong>Naar de leerkracht</strong>, en kiezen deze symbolen.</p>
+    <p class="uitleg">Kinderen tikken <strong>Deel</strong>, dan <strong>Naar de leerkracht</strong>, en kiezen deze symbolen.</p>
     <p id="klas-teller" class="teller" role="status">{namen.length === 1 ? '1 collage ontvangen' : `${namen.length} collages ontvangen`}</p>
     <ul id="klas-namen">{#each namen as n, i (i)}<li><Icon name="student" /> {n}</li>{/each}</ul>
   {/if}

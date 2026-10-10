@@ -9,7 +9,7 @@
 
   onMount(async () => {
     const assets = new AssetStore();
-    for (const t of TEMPLATES) voorbeelden[t.id] = await maakVoorbeeld(t.maak(), assets, 280);
+    for (const t of TEMPLATES) voorbeelden[t.id] = await maakVoorbeeld(t.maak(), assets, 280, true);
   });
 </script>
 
