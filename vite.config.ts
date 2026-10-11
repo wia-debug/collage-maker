@@ -19,10 +19,10 @@ const pwa = VitePWA({
     background_color: '#FFF8EE',
     theme_color: '#FF6B6B',
     icons: [
-      { src: 'pwa-64x64.png?v=2', sizes: '64x64', type: 'image/png' },
-      { src: 'pwa-192x192.png?v=2', sizes: '192x192', type: 'image/png' },
-      { src: 'pwa-512x512.png?v=2', sizes: '512x512', type: 'image/png' },
-      { src: 'maskable-icon-512x512.png?v=2', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      { src: 'pwa-64x64.png?v=3', sizes: '64x64', type: 'image/png' },
+      { src: 'pwa-192x192.png?v=3', sizes: '192x192', type: 'image/png' },
+      { src: 'pwa-512x512.png?v=3', sizes: '512x512', type: 'image/png' },
+      { src: 'maskable-icon-512x512.png?v=3', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
   },
   workbox: {
